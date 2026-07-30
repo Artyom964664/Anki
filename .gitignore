@@ -1,4 +1,10 @@
 node_modules/
 screenshots/
+
+# Личные данные ученика: уровень, цели, ошибки, прогресс.
+# Репозиторий публичный — этому здесь не место.
+progress-*.json
+backup-*.json
+PROFILE.local.md
 .DS_Store
 *.log
