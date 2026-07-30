@@ -30,6 +30,14 @@ jobs:
         run: node tools/build.mjs
       - name: Положить однофайловую версию рядом с приложением
         run: cp dist/anki-lite.html app/anki-lite-single.html
+      - name: Опубликовать инструкции рядом с приложением
+        # чтобы у инструкции был короткий адрес, который можно дать модели одной ссылкой
+        run: |
+          cp CLAUDE_INSTRUCTIONS.md app/CLAUDE_INSTRUCTIONS.md
+          cp ДЛЯ-НЕЙРОНКИ.md app/ДЛЯ-НЕЙРОНКИ.md
+          cp FORMATS.md app/FORMATS.md
+          cp PROFILE.md app/PROFILE.md
+          cp decks/starter-en-a2-b1.json app/starter-deck.json
       # Pages включается один раз вручную: Settings -> Pages -> Source: GitHub Actions.
       # Автовключение (enablement: true) невозможно — токену Actions не даётся право
       # создавать Pages-сайт: "Resource not accessible by integration".
