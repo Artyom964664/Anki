@@ -1,0 +1,2331 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12131a">
+<meta name="description" content="Карточки для изучения английского с интервальным повторением. Работает без интернета, обменивается файлами с Клодом.">
+<title>Английский — карточки</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+/* Мобильный интерфейс. Тёмная тема по умолчанию, светлая — если так в системе. */
+
+:root {
+  --bg: #12131a;
+  --bg2: #1a1c26;
+  --bg3: #23262f;
+  --fg: #eceef4;
+  --muted: #9aa0b0;
+  --line: #2e3140;
+  --accent: #6c8cff;
+  --accent-fg: #ffffff;
+  --g1: #e0556a;
+  --g2: #e09b3d;
+  --g3: #43b581;
+  --g4: #4b9dd8;
+  --ok: #43b581;
+  --warn: #e0a53d;
+  --err: #e0556a;
+  --radius: 16px;
+  --tabh: 62px;
+}
+
+html[data-theme="light"] {
+  --bg: #f6f7fb;
+  --bg2: #ffffff;
+  --bg3: #eceef4;
+  --fg: #171a21;
+  --muted: #666d7d;
+  --line: #dcdfe8;
+  --accent: #3f5fd8;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg); color: var(--fg);
+  font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: none;
+}
+
+body { padding-bottom: env(safe-area-inset-bottom); }
+
+.hidden { display: none !important; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.center { text-align: center; }
+code { background: var(--bg3); padding: 1px 5px; border-radius: 6px; font-size: 13px; }
+
+/* ---------- каркас ---------- */
+.screen { min-height: 100vh; padding-bottom: calc(var(--tabh) + 16px); }
+.top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: calc(env(safe-area-inset-top) + 14px) 16px 10px;
+  position: sticky; top: 0; background: var(--bg); z-index: 5;
+}
+.top h1 { font-size: 22px; margin: 0; letter-spacing: -0.02em; }
+.pad { padding: 4px 16px 24px; }
+
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--tabh) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  display: flex; background: var(--bg2); border-top: 1px solid var(--line); z-index: 20;
+}
+.tab {
+  flex: 1; background: none; border: 0; color: var(--muted);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-size: 11px; padding: 0; cursor: pointer;
+}
+.tab b { font-size: 20px; font-weight: normal; line-height: 1; filter: grayscale(0.6); }
+.tab.active { color: var(--fg); }
+.tab.active b { filter: none; }
+
+/* ---------- кнопки ---------- */
+.btn {
+  appearance: none; border: 1px solid var(--line); background: var(--bg3); color: var(--fg);
+  padding: 12px 16px; border-radius: 12px; font-size: 15px; font-weight: 500;
+  cursor: pointer; min-height: 48px;
+}
+.btn:active { transform: scale(0.985); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.btn.big { width: 100%; font-size: 17px; min-height: 56px; }
+.btn.huge { width: 100%; font-size: 19px; min-height: 62px; margin: 18px 0 6px; font-weight: 600; }
+.btn.link { background: none; border: 0; color: var(--accent); padding: 12px 0; text-align: left; min-height: 0; }
+.btn.danger { background: var(--err); border-color: var(--err); color: #fff; }
+.btn.file { position: relative; overflow: hidden; display: inline-flex; align-items: center; }
+.btn.file input { position: absolute; inset: 0; opacity: 0; }
+.icon-btn { background: none; border: 0; color: var(--muted); font-size: 22px; padding: 8px 12px; cursor: pointer; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.row .btn { flex: 1 1 auto; }
+
+/* ---------- главный ---------- */
+.streak { font-size: 15px; background: var(--bg3); padding: 6px 12px; border-radius: 999px; }
+.goal-card { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
+.goal-row { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); }
+.goal-row b { color: var(--fg); }
+.goal-bar { height: 8px; background: var(--bg3); border-radius: 999px; margin-top: 10px; overflow: hidden; }
+.goal-bar > div { height: 100%; width: 0; background: var(--accent); border-radius: 999px; transition: width .3s; }
+
+.counts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+.count { background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 6px; text-align: center; }
+.count b { display: block; font-size: 22px; }
+.count span { font-size: 11px; color: var(--muted); }
+.count.new b { color: var(--accent); }
+.count.learn b { color: var(--warn); }
+.count.due b { color: var(--g1); }
+.count.mature b { color: var(--ok); }
+
+.modes { margin-top: 20px; }
+.mode-label { font-size: 13px; color: var(--muted); }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.chips.small .chip { font-size: 12px; padding: 6px 10px; min-height: 0; }
+.chip {
+  background: var(--bg2); border: 1px solid var(--line); color: var(--fg);
+  padding: 9px 14px; border-radius: 999px; font-size: 14px; cursor: pointer;
+}
+.chip.active { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+
+.empty-note { color: var(--muted); font-size: 14px; text-align: center; margin: 6px 0 0; }
+.quick { display: grid; gap: 10px; margin-top: 22px; }
+.tile {
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  background: var(--bg2); border: 1px solid var(--line); color: var(--fg);
+  padding: 14px; border-radius: var(--radius); font-size: 15px; cursor: pointer;
+}
+.tile b { font-size: 22px; font-weight: normal; }
+
+/* ---------- тренировка ---------- */
+.review { display: flex; flex-direction: column; height: 100vh; height: 100dvh; padding-bottom: 0; }
+.review-top {
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(env(safe-area-inset-top) + 8px) 8px 8px;
+}
+.review-progress { flex: 1; height: 6px; background: var(--bg3); border-radius: 999px; overflow: hidden; }
+.review-progress > div { height: 100%; width: 0; background: var(--accent); transition: width .25s; }
+.review-counter { font-size: 13px; color: var(--muted); min-width: 52px; text-align: right; padding-right: 8px; }
+
+.card-area { flex: 1; overflow-y: auto; padding: 8px 16px; display: flex; }
+.card {
+  background: var(--bg2); border: 1px solid var(--line); border-radius: 20px;
+  padding: 22px 18px 26px; width: 100%; align-self: flex-start;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+.card-mode { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 14px; }
+.card-question { font-size: 30px; font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; word-break: break-word; }
+.card-question .gap { color: var(--accent); border-bottom: 2px dashed var(--accent); padding: 0 18px; }
+.card-ipa { color: var(--muted); font-size: 15px; margin-top: 6px; }
+.speak-btn {
+  margin-top: 14px; width: 60px; height: 60px; border-radius: 50%;
+  background: var(--bg3); border: 1px solid var(--line); color: var(--fg); font-size: 26px; cursor: pointer;
+}
+.card-hint { color: var(--muted); font-size: 14px; margin-top: 10px; }
+
+.answer-box { width: 100%; margin-top: 20px; }
+input[type="text"], input[type="search"], input[type="number"], textarea, select {
+  width: 100%; background: var(--bg3); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; font-size: 17px; font-family: inherit;
+}
+#answer-input { text-align: center; }
+.verdict { margin-top: 12px; font-size: 15px; min-height: 22px; }
+.verdict.ok { color: var(--ok); }
+.verdict.typo { color: var(--warn); }
+.verdict.err { color: var(--err); }
+.verdict s { color: var(--muted); }
+
+.card-answer { width: 100%; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+.answer-main { font-size: 22px; font-weight: 600; }
+.answer-pos { color: var(--muted); font-size: 13px; margin-top: 4px; }
+.examples { list-style: none; padding: 0; margin: 16px 0 0; text-align: left; }
+.examples li { background: var(--bg3); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; font-size: 15px; }
+.examples .en { display: block; }
+.examples .en em { color: var(--accent); font-style: normal; font-weight: 600; }
+.examples .ru { display: block; color: var(--muted); font-size: 14px; margin-top: 3px; }
+.card-note { margin-top: 12px; font-size: 14px; color: var(--warn); text-align: left; }
+.card-tags { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.card-tags span { font-size: 11px; color: var(--muted); background: var(--bg3); padding: 3px 8px; border-radius: 999px; }
+
+.review-bottom { padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); }
+.grades { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.grade {
+  border: 0; border-radius: 14px; padding: 12px 4px; color: #fff; cursor: pointer;
+  display: flex; flex-direction: column; gap: 3px; min-height: 60px; font-size: 13px; font-weight: 600;
+}
+.grade em { font-style: normal; font-size: 11px; opacity: .85; font-weight: 400; }
+.g1 { background: var(--g1); } .g2 { background: var(--g2); } .g3 { background: var(--g3); } .g4 { background: var(--g4); }
+
+/* ---------- списки, блоки ---------- */
+.block { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-top: 14px; }
+.block h2 { font-size: 16px; margin: 0 0 8px; }
+.block.danger { border-color: var(--err); }
+.field { display: block; font-size: 13px; color: var(--muted); margin-top: 12px; }
+.field input, .field select { margin-top: 6px; }
+.check { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 15px; color: var(--fg); }
+.check input { width: 22px; height: 22px; }
+.result { font-size: 14px; margin-top: 10px; min-height: 20px; }
+.result.ok { color: var(--ok); }
+.result.err { color: var(--err); }
+.preview {
+  background: var(--bg3); border-radius: 12px; padding: 12px; font-size: 12px;
+  white-space: pre-wrap; word-break: break-word; max-height: 260px; overflow: auto; margin-top: 12px;
+}
+textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; }
+
+.list { margin-top: 12px; }
+.item {
+  background: var(--bg2); border: 1px solid var(--line); border-radius: 14px;
+  padding: 12px 14px; margin-bottom: 8px;
+}
+.item-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.item-front { font-weight: 600; }
+.item-back { color: var(--muted); font-size: 14px; margin-top: 2px; }
+.item-meta { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.badge { font-size: 10px; padding: 2px 7px; border-radius: 999px; background: var(--bg3); color: var(--muted); }
+.badge.leech { background: var(--err); color: #fff; }
+.badge.mature { background: var(--ok); color: #fff; }
+.badge.young { background: var(--g4); color: #fff; }
+.badge.new { background: var(--accent); color: #fff; }
+.badge.learning, .badge.relearn { background: var(--warn); color: #22242c; }
+.item-actions { display: flex; gap: 8px; margin-top: 10px; }
+.item-actions button { flex: 1; font-size: 13px; padding: 8px; min-height: 40px; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.stat { background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+.stat b { display: block; font-size: 24px; }
+.stat span { font-size: 12px; color: var(--muted); }
+.bar-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 14px; }
+.bar-row .name { flex: 0 0 38%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-row .bar { flex: 1; height: 10px; background: var(--bg3); border-radius: 999px; overflow: hidden; }
+.bar-row .bar > i { display: block; height: 100%; background: var(--accent); }
+.bar-row .val { flex: 0 0 44px; text-align: right; color: var(--muted); font-size: 13px; }
+.bar-row.bad .bar > i { background: var(--err); }
+.bar-row.mid .bar > i { background: var(--warn); }
+.bar-row.good .bar > i { background: var(--ok); }
+
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%) translateY(20px);
+  bottom: calc(var(--tabh) + 24px); background: var(--bg3); color: var(--fg);
+  border: 1px solid var(--line); padding: 12px 18px; border-radius: 999px;
+  font-size: 14px; opacity: 0; pointer-events: none; transition: all .25s; z-index: 50; max-width: 88vw; text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (min-width: 620px) {
+  .screen { max-width: 640px; margin: 0 auto; }
+  .card-question { font-size: 34px; }
+}
+
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ================= ТРЕНИРОВКА (полноэкранный режим) ================= -->
+  <section id="screen-review" class="screen review hidden">
+    <header class="review-top">
+      <button class="icon-btn" id="review-exit" aria-label="Выйти">✕</button>
+      <div class="review-progress"><div id="review-bar"></div></div>
+      <div class="review-counter" id="review-counter">0/0</div>
+    </header>
+
+    <div class="card-area">
+      <div class="card" id="card">
+        <div class="card-mode" id="card-mode-label"></div>
+
+        <div class="card-question" id="card-question"></div>
+        <div class="card-ipa" id="card-ipa"></div>
+        <button class="speak-btn hidden" id="speak-btn" aria-label="Прослушать">🔊</button>
+        <div class="card-hint" id="card-hint"></div>
+
+        <div class="answer-box hidden" id="answer-box">
+          <input type="text" id="answer-input" autocomplete="off" autocapitalize="none"
+                 autocorrect="off" spellcheck="false" inputmode="latin" placeholder="напиши по-английски…">
+          <div class="verdict" id="verdict"></div>
+        </div>
+
+        <div class="card-answer hidden" id="card-answer">
+          <div class="answer-main" id="answer-main"></div>
+          <div class="answer-pos" id="answer-pos"></div>
+          <ul class="examples" id="examples"></ul>
+          <div class="card-note" id="card-note"></div>
+          <div class="card-tags" id="card-tags"></div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="review-bottom">
+      <button class="btn primary big" id="btn-show">Показать ответ</button>
+      <button class="btn primary big hidden" id="btn-check">Проверить</button>
+      <div class="grades hidden" id="grades">
+        <button class="grade g1" data-grade="1"><span>Не помню</span><em id="ivl-1"></em></button>
+        <button class="grade g2" data-grade="2"><span>Тяжело</span><em id="ivl-2"></em></button>
+        <button class="grade g3" data-grade="3"><span>Помню</span><em id="ivl-3"></em></button>
+        <button class="grade g4" data-grade="4"><span>Легко</span><em id="ivl-4"></em></button>
+      </div>
+    </footer>
+  </section>
+
+  <!-- ================= ГЛАВНЫЙ ================= -->
+  <section id="screen-home" class="screen">
+    <header class="top">
+      <h1>Английский</h1>
+      <div class="streak" id="streak" title="Серия дней">🔥 0</div>
+    </header>
+
+    <div class="pad">
+      <div class="goal-card">
+        <div class="goal-row">
+          <span>Цель на день</span>
+          <b><span id="goal-done">0</span> / <span id="goal-total">40</span></b>
+        </div>
+        <div class="goal-bar"><div id="goal-fill"></div></div>
+      </div>
+
+      <div class="counts">
+        <div class="count new"><b id="c-new">0</b><span>новых</span></div>
+        <div class="count learn"><b id="c-learn">0</b><span>учу</span></div>
+        <div class="count due"><b id="c-due">0</b><span>к повтору</span></div>
+        <div class="count mature"><b id="c-mature">0</b><span>выучено</span></div>
+      </div>
+
+      <div class="modes">
+        <label class="mode-label">Режим</label>
+        <div class="chips" id="mode-chips">
+          <button class="chip" data-mode="mixed">Всё вперемешку</button>
+          <button class="chip" data-mode="recognition">EN → RU</button>
+          <button class="chip" data-mode="typing">Писать по-английски</button>
+          <button class="chip" data-mode="listening">На слух</button>
+        </div>
+      </div>
+
+      <button class="btn primary huge" id="btn-study">Учить</button>
+      <p class="empty-note hidden" id="empty-note"></p>
+
+      <div class="quick">
+        <button class="tile" data-goto="claude"><b>📥</b><span>Загрузить слова от Клода</span></button>
+        <button class="tile" data-goto="claude-export"><b>📤</b><span>Отправить прогресс Клоду</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= СЛОВА ================= -->
+  <section id="screen-cards" class="screen hidden">
+    <header class="top"><h1>Слова</h1><div class="muted" id="cards-total"></div></header>
+    <div class="pad">
+      <input type="search" id="cards-search" placeholder="поиск по слову, переводу, тегу…">
+      <div class="chips small" id="tag-filter"></div>
+      <div class="list" id="cards-list"></div>
+    </div>
+  </section>
+
+  <!-- ================= АНАЛИЗ ================= -->
+  <section id="screen-stats" class="screen hidden">
+    <header class="top"><h1>Анализ</h1></header>
+    <div class="pad" id="stats-body"></div>
+  </section>
+
+  <!-- ================= КЛОД ================= -->
+  <section id="screen-claude" class="screen hidden">
+    <header class="top"><h1>Клод</h1></header>
+    <div class="pad">
+
+      <div class="block">
+        <h2>📥 Новые слова</h2>
+        <p class="muted">Вставь то, что прислал Клод: JSON колоды, или просто строчки вида
+          <code>take off — снимать; взлетать</code>.</p>
+        <textarea id="import-text" rows="7" placeholder='{"format":"anki-lite/deck", ...}   или   word — перевод'></textarea>
+        <div class="row">
+          <button class="btn primary" id="btn-import">Добавить в колоду</button>
+          <button class="btn" id="btn-paste">Из буфера</button>
+          <label class="btn file">Файл<input type="file" id="import-file" accept=".json,.txt,.csv,.tsv,application/json,text/plain"></label>
+        </div>
+        <div class="result" id="import-result"></div>
+        <button class="btn link" id="btn-starter">Загрузить стартовую колоду (A2–B1, 60 слов)</button>
+      </div>
+
+      <div class="block" id="block-export">
+        <h2>📤 Мой прогресс</h2>
+        <p class="muted">Отдай это Клоду — он разберёт ошибки и пришлёт следующую порцию.
+          Короткую сводку проще вставить в чат, файл — точнее и подробнее.</p>
+        <div class="row">
+          <button class="btn primary" id="btn-copy-digest">Скопировать сводку</button>
+          <button class="btn" id="btn-download">Скачать файл</button>
+          <button class="btn hidden" id="btn-share">Поделиться</button>
+        </div>
+        <div class="result" id="export-result"></div>
+        <pre class="preview" id="digest-preview"></pre>
+      </div>
+
+      <div class="block">
+        <h2>💾 Резервная копия</h2>
+        <div class="row">
+          <button class="btn" id="btn-backup">Сохранить копию</button>
+          <label class="btn file">Восстановить<input type="file" id="restore-file" accept=".json,application/json"></label>
+        </div>
+        <div class="result" id="backup-result"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= НАСТРОЙКИ ================= -->
+  <section id="screen-settings" class="screen hidden">
+    <header class="top"><h1>Настройки</h1></header>
+    <div class="pad">
+      <div class="block">
+        <h2>Профиль</h2>
+        <label class="field">Как тебя зовут<input type="text" id="set-name"></label>
+        <label class="field">Уровень
+          <select id="set-level"><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option></select>
+        </label>
+        <label class="field">Цель (зачем учишь)<input type="text" id="set-goal" placeholder="работа, сериалы, переезд…"></label>
+      </div>
+      <div class="block">
+        <h2>Нагрузка</h2>
+        <label class="field">Новых слов в день <input type="number" id="set-new" min="0" max="100"></label>
+        <label class="field">Повторений в день <input type="number" id="set-rev" min="0" max="500"></label>
+        <label class="field">Цель по ответам за день <input type="number" id="set-goalnum" min="5" max="500"></label>
+      </div>
+      <div class="block">
+        <h2>Озвучка и ввод</h2>
+        <label class="check"><input type="checkbox" id="set-tts"> Озвучивать слова</label>
+        <label class="check"><input type="checkbox" id="set-autoplay"> Проговаривать автоматически</label>
+        <label class="field">Голос<select id="set-voice"></select></label>
+        <label class="field">Скорость речи <input type="range" id="set-rate" min="0.5" max="1.2" step="0.05"></label>
+        <label class="check"><input type="checkbox" id="set-ipa"> Показывать транскрипцию</label>
+        <label class="field">Допуск опечаток (букв) <input type="number" id="set-typo" min="0" max="3"></label>
+      </div>
+      <div class="block">
+        <h2>Вид</h2>
+        <label class="field">Тема
+          <select id="set-theme"><option value="auto">Как в системе</option><option value="dark">Тёмная</option><option value="light">Светлая</option></select>
+        </label>
+      </div>
+      <div class="block danger">
+        <h2>Опасная зона</h2>
+        <button class="btn danger" id="btn-reset">Стереть все данные</button>
+      </div>
+      <p class="muted center small">Всё хранится только на этом устройстве. Приложение не отправляет данные в сеть.</p>
+    </div>
+  </section>
+
+  <!-- ================= НИЖНЯЯ НАВИГАЦИЯ ================= -->
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-screen="home"><b>🎯</b><span>Учить</span></button>
+    <button class="tab" data-screen="cards"><b>📚</b><span>Слова</span></button>
+    <button class="tab" data-screen="stats"><b>📈</b><span>Анализ</span></button>
+    <button class="tab" data-screen="claude"><b>💬</b><span>Клод</span></button>
+    <button class="tab" data-screen="settings"><b>⚙️</b><span>Ещё</span></button>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/*
+ * srs.js — интервальное повторение (алгоритм в духе SM-2 / Anki).
+ *
+ * Чистые функции без DOM: этот же файл подключается и в браузере (глобальный SRS),
+ * и в node-тестах (module.exports).
+ *
+ * Оценки: 1 = again (не помню), 2 = hard (тяжело), 3 = good (помню), 4 = easy (легко).
+ * Состояния карточки: new -> learning -> review, а при провале review -> relearn -> review.
+ */
+(function (root) {
+  'use strict';
+
+  var DAY = 86400000;
+  var MIN = 60000;
+
+  var DEFAULTS = {
+    learningSteps: [1, 10],      // минуты: этапы первого изучения
+    relearnSteps: [10],          // минуты: этапы после забывания
+    graduatingInterval: 1,       // дни: интервал после прохождения learning на "good"
+    easyInterval: 4,             // дни: интервал, если сразу нажали "легко"
+    startEase: 2.5,
+    minEase: 1.3,
+    maxEase: 3.2,
+    lapseIntervalFactor: 0.5,    // во сколько раз урезать интервал при провале
+    minLapseInterval: 1,         // дни
+    leechThreshold: 6,           // столько провалов — и карточка помечается как проблемная
+    maxInterval: 365,            // дни
+    fuzz: 0.05,                  // случайный разброс интервала, чтобы карточки не слипались
+    newPerDay: 20,
+    reviewsPerDay: 150,
+    matureDays: 21,              // с какого интервала карточка считается выученной
+    rng: null                    // можно подменить в тестах
+  };
+
+  function cfgOf(opts) {
+    var cfg = {};
+    for (var k in DEFAULTS) if (Object.prototype.hasOwnProperty.call(DEFAULTS, k)) cfg[k] = DEFAULTS[k];
+    if (opts) for (var j in opts) if (Object.prototype.hasOwnProperty.call(opts, j) && opts[j] != null) cfg[j] = opts[j];
+    return cfg;
+  }
+
+  function newSrs(cfg) {
+    var c = cfgOf(cfg);
+    return {
+      state: 'new',
+      step: 0,
+      ef: c.startEase,
+      interval: 0,
+      due: 0,
+      reps: 0,
+      lapses: 0,
+      leech: false,
+      lastGrade: 0,
+      lastReview: 0,
+      introducedAt: 0
+    };
+  }
+
+  function clampEase(ef, cfg) {
+    if (!(ef > 0)) ef = cfg.startEase;
+    return Math.min(cfg.maxEase, Math.max(cfg.minEase, Math.round(ef * 100) / 100));
+  }
+
+  function applyFuzz(days, cfg) {
+    if (!cfg.fuzz || days < 3) return days;
+    var rnd = (cfg.rng || Math.random)();
+    var spread = days * cfg.fuzz;
+    var out = Math.round(days + (rnd * 2 - 1) * spread);
+    return Math.max(1, out);
+  }
+
+  function graduate(c, days, now, cfg) {
+    c.state = 'review';
+    c.step = 0;
+    c.interval = Math.min(cfg.maxInterval, applyFuzz(days, cfg));
+    c.due = now + c.interval * DAY;
+    return c;
+  }
+
+  function stepDelay(steps, idx) {
+    var i = Math.min(Math.max(idx, 0), steps.length - 1);
+    return steps[i] * MIN;
+  }
+
+  /* "Тяжело" на этапе обучения не повторяет тот же интервал, что и "не помню":
+     берём середину между текущим и следующим этапом, иначе кнопки неотличимы. */
+  function hardDelay(steps, idx) {
+    var i = Math.min(Math.max(idx, 0), steps.length - 1);
+    var mins = (i + 1 < steps.length) ? (steps[i] + steps[i + 1]) / 2 : steps[i] * 1.5;
+    return Math.max(steps[i], mins) * MIN;
+  }
+
+  /**
+   * Планирует следующий показ карточки. Возвращает НОВЫЙ объект, вход не меняется.
+   */
+  function schedule(srs, grade, now, opts) {
+    var cfg = cfgOf(opts);
+    now = now || Date.now();
+    grade = Math.min(4, Math.max(1, grade | 0));
+
+    var c = {};
+    var base = srs || newSrs(cfg);
+    for (var k in base) if (Object.prototype.hasOwnProperty.call(base, k)) c[k] = base[k];
+    if (!c.state) c.state = 'new';
+    if (!(c.ef > 0)) c.ef = cfg.startEase;
+
+    c.reps = (c.reps || 0) + 1;
+    c.lastGrade = grade;
+    c.lastReview = now;
+    if (!c.introducedAt) c.introducedAt = now;
+
+    var st = c.state;
+
+    if (st === 'new' || st === 'learning') {
+      if (grade === 1) {
+        c.state = 'learning';
+        c.step = 0;
+        c.due = now + stepDelay(cfg.learningSteps, 0);
+      } else if (grade === 2) {
+        c.state = 'learning';
+        c.due = now + hardDelay(cfg.learningSteps, c.step || 0);
+      } else if (grade === 3) {
+        var next = (st === 'new' ? 0 : (c.step || 0) + 1);
+        if (st === 'new') next = 1;
+        if (next >= cfg.learningSteps.length) {
+          graduate(c, cfg.graduatingInterval, now, cfg);
+        } else {
+          c.state = 'learning';
+          c.step = next;
+          c.due = now + stepDelay(cfg.learningSteps, next);
+        }
+      } else {
+        graduate(c, cfg.easyInterval, now, cfg);
+      }
+      return c;
+    }
+
+    if (st === 'relearn') {
+      if (grade === 1) {
+        c.step = 0;
+        c.due = now + stepDelay(cfg.relearnSteps, 0);
+        return c;
+      }
+      if (grade === 2) {
+        c.due = now + hardDelay(cfg.relearnSteps, c.step || 0);
+        return c;
+      }
+      var nx = (c.step || 0) + 1;
+      if (nx >= cfg.relearnSteps.length || grade === 4) {
+        var back = Math.max(cfg.minLapseInterval, c.interval || cfg.minLapseInterval);
+        return graduate(c, back, now, cfg);
+      }
+      c.step = nx;
+      c.due = now + stepDelay(cfg.relearnSteps, nx);
+      return c;
+    }
+
+    // st === 'review'
+    if (grade === 1) {
+      c.lapses = (c.lapses || 0) + 1;
+      c.ef = clampEase(c.ef - 0.2, cfg);
+      c.interval = Math.max(cfg.minLapseInterval, Math.round((c.interval || 1) * cfg.lapseIntervalFactor));
+      c.state = 'relearn';
+      c.step = 0;
+      c.due = now + stepDelay(cfg.relearnSteps, 0);
+      if (c.lapses >= cfg.leechThreshold) c.leech = true;
+      return c;
+    }
+
+    var prev = Math.max(1, c.interval || 1);
+    var ivl;
+    if (grade === 2) {
+      c.ef = clampEase(c.ef - 0.15, cfg);
+      ivl = Math.max(prev, Math.round(prev * 1.2));
+    } else if (grade === 3) {
+      ivl = Math.max(prev + 1, Math.round(prev * c.ef));
+    } else {
+      c.ef = clampEase(c.ef + 0.15, cfg);
+      ivl = Math.max(prev + 2, Math.round(prev * c.ef * 1.3));
+    }
+    c.state = 'review';
+    c.step = 0;
+    c.interval = Math.min(cfg.maxInterval, applyFuzz(ivl, cfg));
+    c.due = now + c.interval * DAY;
+    return c;
+  }
+
+  /** Через сколько покажем карточку при каждой оценке — для подписей на кнопках. */
+  function previewIntervals(srs, now, opts) {
+    var out = {};
+    for (var g = 1; g <= 4; g++) {
+      var next = schedule(srs, g, now, Object.assign({}, opts || {}, { fuzz: 0 }));
+      out[g] = next.due - (now || Date.now());
+    }
+    return out;
+  }
+
+  function bucketOf(srs, cfg) {
+    var c = cfgOf(cfg);
+    if (!srs || srs.state === 'new' || !srs.reps) return 'new';
+    if (srs.state === 'learning') return 'learning';
+    if (srs.state === 'relearn') return 'relearn';
+    return (srs.interval || 0) >= c.matureDays ? 'mature' : 'young';
+  }
+
+  function isDue(srs, now) {
+    if (!srs || srs.state === 'new' || !srs.reps) return false;
+    return (srs.due || 0) <= (now || Date.now());
+  }
+
+  /**
+   * Собирает очередь на сессию.
+   * cards — массив объектов {id, srs}. done — {newDone, reviewsDone} за сегодня.
+   */
+  function buildQueue(cards, now, opts, done) {
+    var cfg = cfgOf(opts);
+    now = now || Date.now();
+    done = done || {};
+    var rng = cfg.rng || Math.random;
+
+    var learn = [], review = [], fresh = [];
+    for (var i = 0; i < cards.length; i++) {
+      var card = cards[i];
+      if (card.suspended) continue;
+      var s = card.srs;
+      var b = bucketOf(s, cfg);
+      if (b === 'new') { fresh.push(card); continue; }
+      if (!isDue(s, now)) continue;
+      if (b === 'learning' || b === 'relearn') learn.push(card);
+      else review.push(card);
+    }
+
+    function shuffle(arr) {
+      for (var j = arr.length - 1; j > 0; j--) {
+        var k = Math.floor(rng() * (j + 1));
+        var t = arr[j]; arr[j] = arr[k]; arr[k] = t;
+      }
+      return arr;
+    }
+
+    learn.sort(function (a, b2) { return (a.srs.due || 0) - (b2.srs.due || 0); });
+    shuffle(review);
+    // новые — в порядке добавления (position), чтобы колода изучалась предсказуемо
+    fresh.sort(function (a, b2) { return (a.position || 0) - (b2.position || 0); });
+
+    var revLimit = Math.max(0, cfg.reviewsPerDay - (done.reviewsDone || 0));
+    var newLimit = Math.max(0, cfg.newPerDay - (done.newDone || 0));
+    review = review.slice(0, revLimit);
+    fresh = fresh.slice(0, newLimit);
+
+    // перемешиваем повторения с новыми, чтобы новые не шли пачкой в конце
+    var mixed = [];
+    var ri = 0, fi = 0;
+    var everyN = fresh.length ? Math.max(1, Math.round(review.length / fresh.length)) : 0;
+    while (ri < review.length || fi < fresh.length) {
+      for (var n = 0; n < everyN && ri < review.length; n++) mixed.push(review[ri++]);
+      if (fi < fresh.length) mixed.push(fresh[fi++]);
+      if (!everyN) { while (ri < review.length) mixed.push(review[ri++]); }
+    }
+
+    return { learning: learn, queue: learn.concat(mixed), counts: { learning: learn.length, review: review.length, new: fresh.length } };
+  }
+
+  function counts(cards, now, opts, done) {
+    var cfg = cfgOf(opts);
+    now = now || Date.now();
+    var out = { new: 0, learning: 0, relearn: 0, young: 0, mature: 0, dueNow: 0, total: 0, suspended: 0 };
+    for (var i = 0; i < cards.length; i++) {
+      var c = cards[i];
+      out.total++;
+      if (c.suspended) { out.suspended++; continue; }
+      var b = bucketOf(c.srs, cfg);
+      out[b]++;
+      if (b !== 'new' && isDue(c.srs, now)) out.dueNow++;
+    }
+    var q = buildQueue(cards, now, cfg, done);
+    out.toStudy = q.queue.length;
+    return out;
+  }
+
+  // ---- сравнение ответа при вводе с клавиатуры ----
+
+  function normalize(s) {
+    return String(s == null ? '' : s)
+      .toLowerCase()
+      .replace(/[’`]/g, "'")
+      .replace(/[.,!?;:"()\[\]«»…]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function levenshtein(a, b) {
+    a = a || ''; b = b || '';
+    if (a === b) return 0;
+    var m = a.length, n = b.length;
+    if (!m) return n;
+    if (!n) return m;
+    var prev = new Array(n + 1), cur = new Array(n + 1), i, j;
+    for (j = 0; j <= n; j++) prev[j] = j;
+    for (i = 1; i <= m; i++) {
+      cur[0] = i;
+      for (j = 1; j <= n; j++) {
+        var cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+        cur[j] = Math.min(cur[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+      }
+      for (j = 0; j <= n; j++) prev[j] = cur[j];
+    }
+    return prev[n];
+  }
+
+  /**
+   * Проверяет ввод. Допустимые ответы берутся из expected: строка или массив,
+   * варианты можно разделять "/" или ";".
+   * Возвращает {verdict: 'correct'|'typo'|'wrong', match, distance, suggestedGrade}
+   */
+  function checkAnswer(typed, expected, opts) {
+    var tol = (opts && opts.typoTolerance != null) ? opts.typoTolerance : 1;
+    var strip = !(opts && opts.strictArticles);
+    var list = [];
+    (Array.isArray(expected) ? expected : [expected]).forEach(function (e) {
+      String(e == null ? '' : e).split(/[\/;]|\bили\b/).forEach(function (part) {
+        var n = normalize(part);
+        if (n) list.push(n);
+      });
+    });
+    var t = normalize(typed);
+    if (strip) {
+      t = t.replace(/^(to|a|an|the)\s+/, '');
+      list = list.map(function (x) { return x.replace(/^(to|a|an|the)\s+/, ''); });
+    }
+    if (!t) return { verdict: 'wrong', match: list[0] || '', distance: 99, suggestedGrade: 1 };
+
+    var best = null, bestD = 1e9;
+    for (var i = 0; i < list.length; i++) {
+      var d = levenshtein(t, list[i]);
+      if (d < bestD) { bestD = d; best = list[i]; }
+    }
+    if (bestD === 0) return { verdict: 'correct', match: best, distance: 0, suggestedGrade: 3 };
+    var limit = (best && best.length >= 6) ? tol + 1 : tol;
+    if (bestD <= limit && best && best.length >= 4) {
+      return { verdict: 'typo', match: best, distance: bestD, suggestedGrade: 2 };
+    }
+    return { verdict: 'wrong', match: best, distance: bestD, suggestedGrade: 1 };
+  }
+
+  var api = {
+    DAY: DAY,
+    DEFAULTS: DEFAULTS,
+    newSrs: newSrs,
+    schedule: schedule,
+    previewIntervals: previewIntervals,
+    bucketOf: bucketOf,
+    isDue: isDue,
+    buildQueue: buildQueue,
+    counts: counts,
+    normalize: normalize,
+    levenshtein: levenshtein,
+    checkAnswer: checkAnswer
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  root.SRS = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+<script>
+/*
+ * deck.js — разбор и слияние колод.
+ *
+ * Принимает три вида ввода:
+ *   1) JSON формата anki-lite/deck (то, что присылает Клод) — основной путь;
+ *   2) простой текст построчно: "take off — снимать; взлетать" (быстрое добавление с телефона);
+ *   3) CSV/TSV: front,back,example_en,example_ru,tags.
+ *
+ * Слияние идёт по id: повторный импорт той же колоды обновляет текст карточки,
+ * но НЕ сбрасывает прогресс повторений.
+ */
+(function (root) {
+  'use strict';
+
+  var SEP_RE = /\s+[—–]\s+|\t| \| | -- | - | = |\s+:\s+/;
+
+  function slug(s) {
+    return String(s || '')
+      .toLowerCase()
+      .replace(/['’]/g, '')
+      .replace(/[^a-z0-9а-яё]+/gi, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 48);
+  }
+
+  function makeId(card) {
+    var base = slug(card.front || card.cloze || card.back);
+    if (!base) base = 'card';
+    var t = card.type && card.type !== 'word' ? card.type.charAt(0) : 'w';
+    return t + ':' + base;
+  }
+
+  function cleanCard(raw, deckName) {
+    if (!raw) return null;
+    var front = (raw.front != null ? raw.front : raw.en != null ? raw.en : raw.term) || '';
+    var back = (raw.back != null ? raw.back : raw.ru != null ? raw.ru : raw.translation) || '';
+    front = String(front).trim();
+    back = String(back).trim();
+    var type = raw.type || (raw.cloze ? 'cloze' : 'word');
+    if (!front && !raw.cloze) return null;
+
+    var examples = [];
+    var src = raw.examples || raw.example || [];
+    if (!Array.isArray(src)) src = [src];
+    src.forEach(function (e) {
+      if (!e) return;
+      if (typeof e === 'string') { examples.push({ en: e.trim(), ru: '' }); return; }
+      var en = String(e.en || e.english || '').trim();
+      var ru = String(e.ru || e.russian || '').trim();
+      if (en || ru) examples.push({ en: en, ru: ru });
+    });
+
+    var tags = raw.tags || [];
+    if (typeof tags === 'string') tags = tags.split(/[,\s]+/);
+    tags = tags.filter(Boolean).map(function (t) { return String(t).replace(/^#/, '').trim().toLowerCase(); });
+
+    var card = {
+      id: String(raw.id || '').trim() || null,
+      front: front,
+      back: back,
+      ipa: String(raw.ipa || raw.phonetics || '').trim(),
+      pos: String(raw.pos || '').trim(),
+      level: String(raw.level || '').trim().toUpperCase(),
+      type: type,
+      cloze: String(raw.cloze || '').trim(),
+      hint: String(raw.hint || '').trim(),
+      note: String(raw.note || raw.mnemonic || '').trim(),
+      examples: examples,
+      tags: tags,
+      deck: String(raw.deck || deckName || 'default')
+    };
+    if (!card.id) card.id = makeId(card);
+    return card;
+  }
+
+  function parseJson(text) {
+    var data = JSON.parse(text);
+    var name = data.name || data.deck || 'imported';
+    var cards = data.cards || data.notes || (Array.isArray(data) ? data : null);
+    if (!cards) throw new Error('В JSON нет массива cards');
+    var out = [];
+    for (var i = 0; i < cards.length; i++) {
+      var c = cleanCard(cards[i], name);
+      if (c) out.push(c);
+    }
+    return { name: name, cards: out, meta: { source: data.source || '', created: data.created || '', level: data.level || '' } };
+  }
+
+  function parseText(text, deckName) {
+    var lines = String(text).split(/\r?\n/);
+    var tags = [];
+    var out = [];
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (!line || line.charAt(0) === '/' && line.charAt(1) === '/') continue;
+      // строка-директива с тегами: "#phrasal-verbs travel"
+      if (line.charAt(0) === '#') {
+        tags = line.slice(1).split(/[\s,]+/).filter(Boolean).map(function (t) { return t.toLowerCase(); });
+        continue;
+      }
+      var parts = line.split(SEP_RE).map(function (p) { return p.trim(); }).filter(function (p, idx) { return idx < 4; });
+      if (parts.length < 2) continue;
+      var card = cleanCard({
+        front: parts[0],
+        back: parts[1],
+        examples: parts[2] ? [{ en: parts[2], ru: parts[3] || '' }] : [],
+        tags: tags.slice()
+      }, deckName);
+      if (card) out.push(card);
+    }
+    return { name: deckName || 'quick-add', cards: out, meta: { source: 'text' } };
+  }
+
+  function splitCsvLine(line) {
+    var out = [], cur = '', q = false;
+    for (var i = 0; i < line.length; i++) {
+      var ch = line.charAt(i);
+      if (q) {
+        if (ch === '"' && line.charAt(i + 1) === '"') { cur += '"'; i++; }
+        else if (ch === '"') q = false;
+        else cur += ch;
+      } else if (ch === '"') q = true;
+      else if (ch === ',' || ch === '\t') { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur);
+    return out.map(function (s) { return s.trim(); });
+  }
+
+  function parseCsv(text, deckName) {
+    var lines = String(text).split(/\r?\n/).filter(function (l) { return l.trim(); });
+    var out = [];
+    var start = 0;
+    var head = lines.length ? splitCsvLine(lines[0]).map(function (h) { return h.toLowerCase(); }) : [];
+    var isHeader = head.indexOf('front') >= 0 || head.indexOf('en') >= 0;
+    if (isHeader) start = 1;
+    for (var i = start; i < lines.length; i++) {
+      var f = splitCsvLine(lines[i]);
+      if (f.length < 2) continue;
+      var card = cleanCard({
+        front: f[0], back: f[1],
+        examples: f[2] ? [{ en: f[2], ru: f[3] || '' }] : [],
+        tags: f[4] || ''
+      }, deckName);
+      if (card) out.push(card);
+    }
+    return { name: deckName || 'csv', cards: out, meta: { source: 'csv' } };
+  }
+
+  /** Угадывает формат и разбирает. */
+  function parse(text, deckName) {
+    var t = String(text || '').trim();
+    if (!t) throw new Error('Пусто — нечего импортировать');
+    // JSON может прийти обёрнутым в ```json ... ```
+    var fence = t.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fence) t = fence[1].trim();
+    if (t.charAt(0) === '{' || t.charAt(0) === '[') return parseJson(t);
+    var firstLine = t.split(/\r?\n/)[0] || '';
+    if (/(^|,)\s*(front|en)\s*(,|$)/i.test(firstLine) || (firstLine.split(',').length >= 3 && !SEP_RE.test(firstLine))) {
+      return parseCsv(t, deckName);
+    }
+    return parseText(t, deckName);
+  }
+
+  /**
+   * Вливает разобранную колоду в состояние. Возвращает статистику.
+   * cardsMap — объект state.cards, мутируется на месте.
+   */
+  function merge(cardsMap, parsed, now, nextPosition) {
+    var added = 0, updated = 0, pos = nextPosition || 0;
+    var ids = [];
+    parsed.cards.forEach(function (c) {
+      var exist = cardsMap[c.id];
+      ids.push(c.id);
+      if (exist) {
+        // прогресс не трогаем, обновляем только содержимое
+        ['front', 'back', 'ipa', 'pos', 'level', 'type', 'cloze', 'hint', 'note', 'examples'].forEach(function (k) {
+          if (c[k] !== '' && c[k] != null && !(Array.isArray(c[k]) && !c[k].length)) exist[k] = c[k];
+        });
+        var tagSet = {};
+        (exist.tags || []).concat(c.tags || []).forEach(function (t) { tagSet[t] = 1; });
+        exist.tags = Object.keys(tagSet);
+        updated++;
+      } else {
+        c.srs = root.SRS.newSrs();
+        c.addedAt = now || Date.now();
+        c.position = pos++;
+        cardsMap[c.id] = c;
+        added++;
+      }
+    });
+    return { added: added, updated: updated, total: parsed.cards.length, ids: ids, deck: parsed.name, nextPosition: pos };
+  }
+
+  var api = { parse: parse, parseJson: parseJson, parseText: parseText, parseCsv: parseCsv, merge: merge, cleanCard: cleanCard, makeId: makeId, slug: slug };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  root.Deck = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+<script>
+/*
+ * store.js — состояние приложения и его сохранение.
+ *
+ * Всё живёт на устройстве: IndexedDB (основное) или localStorage (если IDB недоступен).
+ * Никаких сетевых запросов приложение не делает вообще.
+ */
+(function (root) {
+  'use strict';
+
+  var DB_NAME = 'anki-lite';
+  var STORE = 'kv';
+  var KEY = 'state';
+  var LOG_CAP = 8000;
+
+  function defaultState() {
+    return {
+      version: 1,
+      profile: { name: '', level: 'B1', goal: '', native: 'ru' },
+      settings: {
+        newPerDay: 15,
+        reviewsPerDay: 120,
+        mode: 'mixed',          // mixed | recognition | typing | listening
+        tts: true,
+        ttsVoice: '',
+        ttsRate: 0.9,
+        theme: 'auto',
+        typoTolerance: 1,
+        showIpa: true,
+        autoPlay: true,
+        dailyGoal: 40
+      },
+      cards: {},
+      decks: {},
+      log: [],
+      daily: { date: '', newDone: 0, reviewsDone: 0 },
+      nextPosition: 0,
+      lastExportAt: 0,
+      lastImportAt: 0
+    };
+  }
+
+  // ---- IndexedDB ----
+  function openDb() {
+    return new Promise(function (resolve, reject) {
+      if (!root.indexedDB) return reject(new Error('no idb'));
+      var req = root.indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = function () {
+        var db = req.result;
+        if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
+      };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error); };
+    });
+  }
+
+  function idbGet(key) {
+    return openDb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction(STORE, 'readonly');
+        var r = tx.objectStore(STORE).get(key);
+        r.onsuccess = function () { resolve(r.result); };
+        r.onerror = function () { reject(r.error); };
+      });
+    });
+  }
+
+  function idbSet(key, val) {
+    return openDb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction(STORE, 'readwrite');
+        tx.objectStore(STORE).put(val, key);
+        tx.oncomplete = function () { resolve(true); };
+        tx.onerror = function () { reject(tx.error); };
+      });
+    });
+  }
+
+  // ---- localStorage fallback ----
+  function lsGet() {
+    try {
+      var raw = root.localStorage.getItem(DB_NAME + ':' + KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function lsSet(val) {
+    try { root.localStorage.setItem(DB_NAME + ':' + KEY, JSON.stringify(val)); return true; }
+    catch (e) { return false; }
+  }
+
+  var state = defaultState();
+  var saveTimer = null;
+  var useIdb = true;
+
+  function migrate(s) {
+    var d = defaultState();
+    if (!s || typeof s !== 'object') return d;
+    // мягкая миграция: добиваем недостающие поля значениями по умолчанию
+    Object.keys(d).forEach(function (k) {
+      if (s[k] == null) s[k] = d[k];
+    });
+    Object.keys(d.settings).forEach(function (k) {
+      if (s.settings[k] == null) s.settings[k] = d.settings[k];
+    });
+    Object.keys(d.profile).forEach(function (k) {
+      if (s.profile[k] == null) s.profile[k] = d.profile[k];
+    });
+    Object.keys(s.cards).forEach(function (id) {
+      var c = s.cards[id];
+      if (!c.srs) c.srs = root.SRS.newSrs(s.settings);
+      if (!c.tags) c.tags = [];
+      if (!c.examples) c.examples = [];
+      if (c.position == null) c.position = 0;
+    });
+    return s;
+  }
+
+  function load() {
+    return idbGet(KEY).then(function (v) {
+      state = migrate(v || lsGet());
+      return state;
+    }).catch(function () {
+      useIdb = false;
+      state = migrate(lsGet());
+      return state;
+    });
+  }
+
+  function saveNow() {
+    var snapshot = state;
+    if (useIdb) {
+      return idbSet(KEY, snapshot).catch(function () { useIdb = false; lsSet(snapshot); });
+    }
+    lsSet(snapshot);
+    return Promise.resolve(true);
+  }
+
+  function save() {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () { saveTimer = null; saveNow(); }, 250);
+  }
+
+  function get() { return state; }
+
+  function replace(s) { state = migrate(s); return saveNow(); }
+
+  function reset() { state = defaultState(); return saveNow(); }
+
+  function todayKey(now) {
+    var d = new Date(now || Date.now());
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  /** Сбрасывает дневные счётчики при смене даты. */
+  function rollDay(now) {
+    var key = todayKey(now);
+    if (state.daily.date !== key) {
+      state.daily = { date: key, newDone: 0, reviewsDone: 0 };
+      save();
+    }
+    return state.daily;
+  }
+
+  function cardsArray() {
+    return Object.keys(state.cards).map(function (id) { return state.cards[id]; });
+  }
+
+  /** Записывает результат повторения: обновляет srs, лог и дневные счётчики. */
+  function recordReview(cardId, grade, meta) {
+    var now = (meta && meta.now) || Date.now();
+    var card = state.cards[cardId];
+    if (!card) return null;
+    rollDay(now);
+    var wasNew = root.SRS.bucketOf(card.srs, state.settings) === 'new';
+    card.srs = root.SRS.schedule(card.srs, grade, now, state.settings);
+    state.log.push({
+      ts: now,
+      id: cardId,
+      grade: grade,
+      mode: (meta && meta.mode) || 'recognition',
+      ms: (meta && meta.ms) || 0,
+      typed: (meta && meta.typed) || '',
+      verdict: (meta && meta.verdict) || ''
+    });
+    if (state.log.length > LOG_CAP) state.log.splice(0, state.log.length - LOG_CAP);
+    if (wasNew) state.daily.newDone++; else state.daily.reviewsDone++;
+    save();
+    return card;
+  }
+
+  var api = {
+    defaultState: defaultState,
+    load: load,
+    save: save,
+    saveNow: saveNow,
+    get: get,
+    replace: replace,
+    reset: reset,
+    rollDay: rollDay,
+    todayKey: todayKey,
+    cardsArray: cardsArray,
+    recordReview: recordReview,
+    migrate: migrate
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  root.Store = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+<script>
+/*
+ * report.js — выгрузка прогресса для модели-репетитора.
+ *
+ * Две формы одного и того же:
+ *   buildReport(state)  -> объект формата anki-lite/progress (полный, файлом)
+ *   buildDigest(state)  -> короткий markdown, который удобно вставить в чат с телефона
+ *
+ * Формат подробно описан в FORMATS.md — модель читает именно его.
+ */
+(function (root) {
+  'use strict';
+
+  var DAY = 86400000;
+
+  /* Файл выгрузки должен объяснять сам себя: модель может получить его вообще без
+     контекста, поэтому инструкция едет внутри JSON первым полем. */
+  function selfDescription(state) {
+    return {
+      что_это: 'Выгрузка прогресса из приложения-карточек «Английский» (anki-lite). Ученик учит английский по карточкам с интервальным повторением и прислал этот файл, чтобы ты разобрал его ошибки.',
+      язык_общения: 'русский; примеры и разбор — на английском с переводом',
+      уровень_ученика: (state.profile && state.profile.level) || 'не указан',
+      цель_ученика: (state.profile && state.profile.goal) || 'не указана',
+      что_сделать: [
+        '1. Прочитай summary — общая точность и нагрузка. Если accuracy7d < 0.75, новых слов давай меньше обычного; если > 0.9 — больше.',
+        '2. Разбери leeches (слова, которые не идут) — для каждого объясни, почему путается, и предложи мнемонику, уточнённый перевод или живой пример. Это самое важное.',
+        '3. Посмотри weakTags — темы с точностью ниже 70%. По самой слабой дай короткий мини-урок (5–10 строк, без теории ради теории).',
+        '4. Разбери typingErrors — это ошибки при письме. Найди закономерность (ei/ie, двойные согласные, окончания) и дай правило.',
+        '5. Пришли новую колоду в формате anki-lite/deck (шаблон ниже) — 15–25 карточек, с учётом knownWell (эти слова не повторяй).',
+        '6. Закончи 2–3 конкретными задачами на следующие дни.'
+      ],
+      формат_ответа: 'Сначала короткий разбор текстом, потом ОДИН блок кода с JSON колоды — ученик копирует его в приложение целиком (вкладка «Клод» → «Новые слова»).',
+      шаблон_колоды: {
+        format: 'anki-lite/deck',
+        version: 1,
+        name: 'короткое имя набора',
+        cards: [{
+          front: 'английское слово или фраза',
+          back: 'перевод; можно несколько через ;',
+          ipa: '/transcription/',
+          pos: 'noun | verb | adj | phrasal verb | idiom',
+          level: 'A2 | B1 | B2',
+          tags: ['тема', 'подтема'],
+          examples: [{ en: 'Живое предложение со словом.', ru: 'Перевод предложения.' }],
+          note: 'мнемоника или подсказка, необязательно'
+        }]
+      },
+      правила_карточек: [
+        'front — всегда английский, back — всегда русский, иначе приложение перепутает направление.',
+        'У каждой карточки минимум один пример с переводом: без контекста слово не запоминается.',
+        'Не кладите в один набор похожие слова-паронимы — ученик начнёт их путать.',
+        'Абстрактные слова переводите фразой, а не одним словом.',
+        'Не присылай снова то, что уже есть в knownWell.'
+      ],
+      подробная_инструкция: 'CLAUDE_INSTRUCTIONS.md в репозитории приложения (Artyom964664/Anki)',
+      поля_ниже: {
+        summary: 'общая статистика: buckets — распределение карточек, accuracy* — доля ответов «помню/легко»',
+        leeches: 'проблемные карточки: lapses — сколько раз забыл, accuracy — доля успешных ответов',
+        weakTags: 'точность по темам (тегам)',
+        typingErrors: 'что ученик написал вместо правильного слова',
+        knownWell: 'слова, выученные надёжно — их не нужно давать заново',
+        cards: 'полный список карточек с историей ответов (g: 1=не помню, 2=тяжело, 3=помню, 4=легко; ms — время ответа)'
+      }
+    };
+  }
+
+  function dayKey(ts) {
+    var d = new Date(ts);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function round(x, n) {
+    var p = Math.pow(10, n || 2);
+    return Math.round((x || 0) * p) / p;
+  }
+
+  function cardList(state) {
+    return Object.keys(state.cards || {}).map(function (id) { return state.cards[id]; });
+  }
+
+  function accuracy(entries) {
+    if (!entries.length) return null;
+    var ok = 0;
+    entries.forEach(function (e) { if (e.grade >= 3) ok++; });
+    return round(ok / entries.length, 3);
+  }
+
+  function streakOf(log, now) {
+    var days = {};
+    log.forEach(function (e) { days[dayKey(e.ts)] = 1; });
+    var streak = 0;
+    var cur = now || Date.now();
+    // если сегодня не занимались — считаем от вчера, серия ещё не прервана
+    if (!days[dayKey(cur)]) cur -= DAY;
+    while (days[dayKey(cur)]) { streak++; cur -= DAY; }
+    return streak;
+  }
+
+  function buildReport(state, opts) {
+    opts = opts || {};
+    var now = opts.now || Date.now();
+    var historyPerCard = opts.historyPerCard || 8;
+    var cards = cardList(state);
+    var log = (state.log || []).slice();
+
+    var byCard = {};
+    log.forEach(function (e) {
+      (byCard[e.id] = byCard[e.id] || []).push(e);
+    });
+
+    var last7 = log.filter(function (e) { return e.ts >= now - 7 * DAY; });
+    var last30 = log.filter(function (e) { return e.ts >= now - 30 * DAY; });
+
+    var buckets = { new: 0, learning: 0, relearn: 0, young: 0, mature: 0 };
+    cards.forEach(function (c) { buckets[root.SRS.bucketOf(c.srs, state.settings)]++; });
+
+    var times = last30.map(function (e) { return e.ms; }).filter(function (m) { return m > 0 && m < 60000; });
+    var avgMs = times.length ? Math.round(times.reduce(function (a, b) { return a + b; }, 0) / times.length) : null;
+
+    // --- проблемные карточки ---
+    var leeches = [];
+    cards.forEach(function (c) {
+      var h = byCard[c.id] || [];
+      if (!h.length) return;
+      var acc = accuracy(h);
+      var lapses = (c.srs && c.srs.lapses) || 0;
+      var hard = lapses >= 3 || (h.length >= 3 && acc != null && acc < 0.6);
+      if (!hard) return;
+      leeches.push({
+        id: c.id, front: c.front, back: c.back,
+        tags: c.tags || [],
+        reps: h.length, lapses: lapses, accuracy: acc,
+        state: c.srs ? c.srs.state : 'new',
+        interval: c.srs ? c.srs.interval : 0,
+        note: c.note || ''
+      });
+    });
+    leeches.sort(function (a, b) { return (b.lapses - a.lapses) || (a.accuracy - b.accuracy); });
+
+    // --- слабые темы ---
+    var tagStat = {};
+    log.forEach(function (e) {
+      var c = state.cards[e.id];
+      if (!c) return;
+      (c.tags && c.tags.length ? c.tags : ['без-тега']).forEach(function (t) {
+        var s = tagStat[t] = tagStat[t] || { tag: t, reviews: 0, ok: 0, cards: {} };
+        s.reviews++;
+        if (e.grade >= 3) s.ok++;
+        s.cards[e.id] = 1;
+      });
+    });
+    var weakTags = Object.keys(tagStat).map(function (t) {
+      var s = tagStat[t];
+      return { tag: t, reviews: s.reviews, cards: Object.keys(s.cards).length, accuracy: round(s.ok / s.reviews, 3) };
+    }).filter(function (s) { return s.reviews >= 4; })
+      .sort(function (a, b) { return a.accuracy - b.accuracy; });
+
+    // --- ошибки при вводе (орфография / не то слово) ---
+    var typedErr = {};
+    log.forEach(function (e) {
+      if (!e.typed || e.verdict === 'correct') return;
+      var c = state.cards[e.id];
+      var key = e.id + '|' + e.typed.toLowerCase();
+      var s = typedErr[key] = typedErr[key] || {
+        id: e.id, expected: c ? c.front : '', typed: e.typed, verdict: e.verdict || 'wrong', count: 0
+      };
+      s.count++;
+    });
+    var typingErrors = Object.keys(typedErr).map(function (k) { return typedErr[k]; })
+      .sort(function (a, b) { return b.count - a.count; }).slice(0, 60);
+
+    // --- уверенно выученное: чтобы модель не присылала это снова ---
+    var known = cards.filter(function (c) {
+      return c.srs && c.srs.state === 'review' && c.srs.interval >= (state.settings && state.settings.matureDays || 21) && (c.srs.lapses || 0) <= 1;
+    }).map(function (c) { return c.front; });
+
+    var perCard = cards.map(function (c) {
+      var h = (byCard[c.id] || []).slice(-historyPerCard).map(function (e) {
+        return { ts: new Date(e.ts).toISOString().slice(0, 16) + 'Z', g: e.grade, mode: e.mode, ms: e.ms, typed: e.typed || undefined };
+      });
+      return {
+        id: c.id, front: c.front, back: c.back, tags: c.tags || [],
+        state: c.srs ? c.srs.state : 'new',
+        reps: c.srs ? c.srs.reps : 0,
+        lapses: c.srs ? c.srs.lapses : 0,
+        ef: c.srs ? c.srs.ef : null,
+        interval: c.srs ? c.srs.interval : 0,
+        due: c.srs && c.srs.due ? new Date(c.srs.due).toISOString().slice(0, 10) : null,
+        accuracy: accuracy(byCard[c.id] || []),
+        history: h
+      };
+    });
+
+    var studyDays = {};
+    log.forEach(function (e) { studyDays[dayKey(e.ts)] = (studyDays[dayKey(e.ts)] || 0) + 1; });
+
+    return {
+      ИНСТРУКЦИЯ_ДЛЯ_МОДЕЛИ: selfDescription(state),
+      format: 'anki-lite/progress',
+      version: 1,
+      exportedAt: new Date(now).toISOString(),
+      learner: state.profile || {},
+      settings: {
+        newPerDay: state.settings.newPerDay,
+        reviewsPerDay: state.settings.reviewsPerDay,
+        mode: state.settings.mode
+      },
+      summary: {
+        totalCards: cards.length,
+        buckets: buckets,
+        reviewsTotal: log.length,
+        reviews7d: last7.length,
+        reviews30d: last30.length,
+        accuracyAll: accuracy(log),
+        accuracy7d: accuracy(last7),
+        accuracy30d: accuracy(last30),
+        avgAnswerMs: avgMs,
+        streakDays: streakOf(log, now),
+        studyDays: Object.keys(studyDays).length,
+        dueNow: cards.filter(function (c) { return root.SRS.isDue(c.srs, now); }).length
+      },
+      byDay: Object.keys(studyDays).sort().slice(-30).map(function (d) { return { date: d, reviews: studyDays[d] }; }),
+      leeches: leeches.slice(0, 40),
+      weakTags: weakTags.slice(0, 20),
+      typingErrors: typingErrors,
+      knownWell: known.slice(0, 400),
+      cards: perCard
+    };
+  }
+
+  /** Короткая сводка для вставки прямо в чат (когда лень возиться с файлом). */
+  function buildDigest(state, opts) {
+    var r = buildReport(state, opts);
+    var s = r.summary;
+    var L = [];
+    L.push('Это сводка из моего приложения-карточек для английского (anki-lite).');
+    L.push('Ты — мой репетитор. Разбери ошибки ниже и пришли новую порцию слов одним блоком JSON формата anki-lite/deck');
+    L.push('(поля: format, name, cards[{front, back, ipa, pos, level, tags[], examples[{en, ru}], note}] — front всегда по-английски, back по-русски, пример обязателен).');
+    L.push('');
+    L.push('СВОДКА ИЗ ПРИЛОЖЕНИЯ, ' + r.exportedAt.slice(0, 10));
+    L.push('Уровень: ' + ((state.profile && state.profile.level) || '—') + ', цель: ' + ((state.profile && state.profile.goal) || '—'));
+    L.push('Карточек: ' + s.totalCards + ' (новых ' + s.buckets.new + ', учу ' + (s.buckets.learning + s.buckets.relearn) + ', молодых ' + s.buckets.young + ', выучено ' + s.buckets.mature + ')');
+    L.push('Повторений за 7 дней: ' + s.reviews7d + ', точность 7д: ' + (s.accuracy7d == null ? '—' : Math.round(s.accuracy7d * 100) + '%') + ', всего: ' + (s.accuracyAll == null ? '—' : Math.round(s.accuracyAll * 100) + '%'));
+    L.push('Серия дней: ' + s.streakDays + ', среднее время ответа: ' + (s.avgAnswerMs ? (s.avgAnswerMs / 1000).toFixed(1) + ' с' : '—'));
+    if (r.weakTags.length) {
+      L.push('');
+      L.push('Слабые темы:');
+      r.weakTags.slice(0, 6).forEach(function (t) {
+        L.push('- ' + t.tag + ': ' + Math.round(t.accuracy * 100) + '% (' + t.reviews + ' повторений)');
+      });
+    }
+    if (r.leeches.length) {
+      L.push('');
+      L.push('Не идут (' + r.leeches.length + '):');
+      r.leeches.slice(0, 15).forEach(function (c) {
+        L.push('- ' + c.front + ' = ' + c.back + ' — провалов ' + c.lapses + ', точность ' + (c.accuracy == null ? '—' : Math.round(c.accuracy * 100) + '%'));
+      });
+    }
+    if (r.typingErrors.length) {
+      L.push('');
+      L.push('Ошибки при вводе:');
+      r.typingErrors.slice(0, 15).forEach(function (e) {
+        L.push('- ждал "' + e.expected + '", написал "' + e.typed + '"' + (e.count > 1 ? ' (x' + e.count + ')' : ''));
+      });
+    }
+    if (r.knownWell.length) {
+      L.push('');
+      L.push('Уже знаю надёжно (не присылай заново): ' + r.knownWell.slice(0, 60).join(', '));
+    }
+    L.push('');
+    L.push('Что нужно от тебя: 1) разбор слов из списка «не идут» с мнемониками, 2) мини-урок по самой слабой теме, 3) правило по ошибкам в написании, 4) новая колода 15–25 карточек, 5) две-три задачи на неделю.');
+    return L.join('\n');
+  }
+
+  var api = { buildReport: buildReport, buildDigest: buildDigest, dayKey: dayKey };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  root.Report = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+<script>
+/*
+ * tts.js — озвучка через системный синтезатор речи Android (Web Speech API).
+ * Интернет не нужен: используется голос, установленный в телефоне.
+ */
+(function (root) {
+  'use strict';
+
+  var voices = [];
+  var ready = false;
+
+  function refresh() {
+    if (!root.speechSynthesis) return;
+    voices = root.speechSynthesis.getVoices() || [];
+    ready = voices.length > 0;
+  }
+
+  function available() { return !!root.speechSynthesis; }
+
+  function englishVoices() {
+    refresh();
+    return voices.filter(function (v) { return /^en/i.test(v.lang || ''); });
+  }
+
+  function pick(preferredName) {
+    var en = englishVoices();
+    if (!en.length) return null;
+    if (preferredName) {
+      for (var i = 0; i < en.length; i++) if (en[i].name === preferredName) return en[i];
+    }
+    // предпочитаем en-US, затем en-GB, затем что есть
+    var order = ['en-US', 'en_US', 'en-GB', 'en_GB'];
+    for (var o = 0; o < order.length; o++) {
+      for (var j = 0; j < en.length; j++) if ((en[j].lang || '').replace('_', '-') === order[o].replace('_', '-')) return en[j];
+    }
+    return en[0];
+  }
+
+  function speak(text, opts) {
+    if (!available() || !text) return false;
+    opts = opts || {};
+    try {
+      root.speechSynthesis.cancel();
+      var u = new root.SpeechSynthesisUtterance(String(text));
+      var v = pick(opts.voice);
+      if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = 'en-US'; }
+      u.rate = opts.rate || 0.9;
+      u.pitch = 1;
+      root.speechSynthesis.speak(u);
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function stop() { try { root.speechSynthesis.cancel(); } catch (e) {} }
+
+  if (root.speechSynthesis) {
+    refresh();
+    root.speechSynthesis.onvoiceschanged = refresh;
+  }
+
+  root.TTS = { available: available, speak: speak, stop: stop, englishVoices: englishVoices, isReady: function () { return ready; } };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+<script>
+/* Сгенерировано tools/build.mjs из decks/starter-en-a2-b1.json — руками не править. */
+window.STARTER_DECK = {"format":"anki-lite/deck","version":1,"name":"starter-a2-b1","level":"A2-B1","source":"стартовый набор","description":"60 высокочастотных слов и выражений: фразовые глаголы, повседневные глаголы, прилагательные, существительные для работы и учёбы, связки речи и устойчивые сочетания.","cards":[{"front":"take off","back":"снимать (одежду); взлетать","ipa":"/teɪk ɒf/","pos":"phrasal verb","level":"A2","tags":["phrasal-verbs","travel"],"examples":[{"en":"The plane took off an hour late.","ru":"Самолёт взлетел с опозданием на час."},{"en":"Take off your coat, it's warm here.","ru":"Снимай пальто, здесь тепло."}]},{"front":"give up","back":"бросить (дело, привычку); сдаться","ipa":"/ɡɪv ʌp/","pos":"phrasal verb","level":"A2","tags":["phrasal-verbs","habits"],"examples":[{"en":"Don't give up — you're almost there.","ru":"Не сдавайся — ты почти дошёл."},{"en":"He gave up smoking two years ago.","ru":"Он бросил курить два года назад."}]},{"front":"look for","back":"искать","ipa":"/lʊk fɔː/","pos":"phrasal verb","level":"A2","tags":["phrasal-verbs","everyday"],"examples":[{"en":"I'm looking for my keys.","ru":"Я ищу свои ключи."}],"note":"look for — искать (процесс), find — найти (результат)"},{"front":"find out","back":"выяснить, узнать","ipa":"/faɪnd aʊt/","pos":"phrasal verb","level":"A2","tags":["phrasal-verbs","everyday"],"examples":[{"en":"I need to find out when the shop opens.","ru":"Мне нужно выяснить, когда открывается магазин."}]},{"front":"put off","back":"откладывать, переносить на потом","ipa":"/pʊt ɒf/","pos":"phrasal verb","level":"B1","tags":["phrasal-verbs","work"],"examples":[{"en":"We put off the meeting until Friday.","ru":"Мы отложили встречу до пятницы."}]},{"front":"come up with","back":"придумать, предложить (идею)","ipa":"/kʌm ʌp wɪð/","pos":"phrasal verb","level":"B1","tags":["phrasal-verbs","work"],"examples":[{"en":"She came up with a simple solution.","ru":"Она придумала простое решение."}]},{"front":"run out of","back":"закончиться (о запасе)","ipa":"/rʌn aʊt ɒv/","pos":"phrasal verb","level":"B1","tags":["phrasal-verbs","everyday"],"examples":[{"en":"We've run out of coffee.","ru":"У нас закончился кофе."}],"note":"Подлежащее — тот, у кого закончилось: I ran out of time, а не time ran out of me"},{"front":"get along with","back":"ладить с кем-то","ipa":"/ɡet əˈlɒŋ wɪð/","pos":"phrasal verb","level":"B1","tags":["phrasal-verbs","people"],"examples":[{"en":"I get along with my new colleagues.","ru":"Я хорошо лажу с новыми коллегами."}]},{"front":"turn down","back":"отказаться от (предложения); убавить (звук)","ipa":"/tɜːn daʊn/","pos":"phrasal verb","level":"B1","tags":["phrasal-verbs","work"],"examples":[{"en":"He turned down the job offer.","ru":"Он отказался от предложения о работе."},{"en":"Please turn down the music.","ru":"Пожалуйста, убавь музыку."}]},{"front":"figure out","back":"разобраться, сообразить","ipa":"/ˈfɪɡə aʊt/","pos":"phrasal verb","level":"B1","tags":["phrasal-verbs","thinking"],"examples":[{"en":"I can't figure out how this works.","ru":"Я не могу разобраться, как это работает."}]},{"front":"afford","back":"позволить себе (по деньгам, времени)","ipa":"/əˈfɔːd/","pos":"verb","level":"B1","tags":["verbs","money"],"examples":[{"en":"We can't afford a new car right now.","ru":"Сейчас мы не можем позволить себе новую машину."}],"note":"Почти всегда с can / can't: I can't afford it"},{"front":"borrow","back":"взять взаймы, одолжить у кого-то","ipa":"/ˈbɒrəʊ/","pos":"verb","level":"A2","tags":["verbs","money","пары-путаницы"],"examples":[{"en":"Can I borrow your charger?","ru":"Можно взять твою зарядку?"}],"note":"borrow — брать у кого-то, lend — давать кому-то. Я borrow from you, ты lend to me."},{"front":"lend","back":"дать в долг, одолжить кому-то","ipa":"/lend/","pos":"verb","level":"A2","tags":["verbs","money","пары-путаницы"],"examples":[{"en":"Could you lend me ten dollars?","ru":"Можешь одолжить мне десять долларов?"}]},{"front":"mention","back":"упомянуть, сказать вскользь","ipa":"/ˈmenʃn/","pos":"verb","level":"B1","tags":["verbs","speaking"],"examples":[{"en":"She mentioned that she was leaving early.","ru":"Она упомянула, что уйдёт раньше."}]},{"front":"complain","back":"жаловаться","ipa":"/kəmˈpleɪn/","pos":"verb","level":"A2","tags":["verbs","speaking"],"examples":[{"en":"He complained about the noise.","ru":"Он пожаловался на шум."}],"note":"complain about something, complain to somebody"},{"front":"improve","back":"улучшать; улучшаться","ipa":"/ɪmˈpruːv/","pos":"verb","level":"A2","tags":["verbs","learning"],"examples":[{"en":"My English is improving slowly.","ru":"Мой английский постепенно улучшается."}]},{"front":"suggest","back":"предлагать (идею); советовать","ipa":"/səˈdʒest/","pos":"verb","level":"B1","tags":["verbs","work"],"examples":[{"en":"I suggest starting with the easy part.","ru":"Предлагаю начать с простой части."}],"note":"После suggest идёт -ing или that-предложение, но не «suggest me»"},{"front":"avoid","back":"избегать","ipa":"/əˈvɔɪd/","pos":"verb","level":"B1","tags":["verbs","everyday"],"examples":[{"en":"I try to avoid driving at night.","ru":"Я стараюсь избегать поездок ночью."}],"note":"avoid + -ing: avoid doing, а не avoid to do"},{"front":"deserve","back":"заслуживать","ipa":"/dɪˈzɜːv/","pos":"verb","level":"B1","tags":["verbs","feelings"],"examples":[{"en":"You deserve a break.","ru":"Ты заслуживаешь отдыха."}]},{"front":"achieve","back":"достичь (цели, результата)","ipa":"/əˈtʃiːv/","pos":"verb","level":"B1","tags":["verbs","work"],"examples":[{"en":"We achieved everything we planned.","ru":"Мы достигли всего, что планировали."}]},{"front":"admit","back":"признать (вину, факт)","ipa":"/ədˈmɪt/","pos":"verb","level":"B1","tags":["verbs","speaking"],"examples":[{"en":"He admitted that he was wrong.","ru":"Он признал, что был неправ."}]},{"front":"rely on","back":"полагаться на, зависеть от","ipa":"/rɪˈlaɪ ɒn/","pos":"verb","level":"B1","tags":["verbs","people"],"examples":[{"en":"You can rely on her.","ru":"На неё можно полагаться."}]},{"front":"reliable","back":"надёжный","ipa":"/rɪˈlaɪəbl/","pos":"adjective","level":"B1","tags":["adjectives","people"],"examples":[{"en":"He's a reliable person — he never lets you down.","ru":"Он надёжный человек — никогда не подводит."}]},{"front":"aware","back":"осведомлённый, в курсе","ipa":"/əˈweə/","pos":"adjective","level":"B1","tags":["adjectives","thinking"],"examples":[{"en":"I wasn't aware of the problem.","ru":"Я не был в курсе проблемы."}],"note":"be aware of something / be aware that…"},{"front":"annoying","back":"раздражающий, бесящий","ipa":"/əˈnɔɪɪŋ/","pos":"adjective","level":"A2","tags":["adjectives","feelings"],"examples":[{"en":"That sound is really annoying.","ru":"Этот звук реально раздражает."}],"note":"annoying — про то, что раздражает; annoyed — про того, кто раздражён"},{"front":"confident","back":"уверенный (в себе)","ipa":"/ˈkɒnfɪdənt/","pos":"adjective","level":"B1","tags":["adjectives","feelings"],"examples":[{"en":"She sounds confident when she speaks English.","ru":"Она звучит уверенно, когда говорит по-английски."}]},{"front":"tough","back":"сложный, тяжёлый; жёсткий","ipa":"/tʌf/","pos":"adjective","level":"B1","tags":["adjectives","everyday"],"examples":[{"en":"It was a tough week.","ru":"Это была тяжёлая неделя."}],"note":"читается «таф»: -ough здесь как [ʌf]"},{"front":"spare","back":"запасной, свободный (о времени)","ipa":"/speə/","pos":"adjective","level":"B1","tags":["adjectives","everyday"],"examples":[{"en":"Do you have a spare charger?","ru":"У тебя есть запасная зарядка?"},{"en":"I read in my spare time.","ru":"Я читаю в свободное время."}]},{"front":"willing","back":"готовый (что-то сделать), не против","ipa":"/ˈwɪlɪŋ/","pos":"adjective","level":"B1","tags":["adjectives","work"],"examples":[{"en":"She's willing to help us.","ru":"Она готова нам помочь."}],"note":"be willing to do — согласен сделать; не путать с will (будущее время)"},{"front":"upset","back":"расстроенный; расстроить","ipa":"/ʌpˈset/","pos":"adjective","level":"B1","tags":["adjectives","feelings"],"examples":[{"en":"Don't be upset about the result.","ru":"Не расстраивайся из-за результата."}]},{"front":"brief","back":"краткий, короткий","ipa":"/briːf/","pos":"adjective","level":"B1","tags":["adjectives","work"],"examples":[{"en":"Let me give you a brief summary.","ru":"Давай я дам краткое резюме."}]},{"front":"worth","back":"стоящий (чего-то), имеет смысл","ipa":"/wɜːθ/","pos":"adjective","level":"B1","tags":["adjectives","everyday"],"examples":[{"en":"This film is worth watching.","ru":"Этот фильм стоит посмотреть."}],"note":"worth + -ing: worth trying, worth it"},{"front":"issue","back":"вопрос, проблема","ipa":"/ˈɪʃuː/","pos":"noun","level":"B1","tags":["nouns","work"],"examples":[{"en":"We need to fix this issue today.","ru":"Нам нужно решить эту проблему сегодня."}]},{"front":"deadline","back":"срок сдачи, крайний срок","ipa":"/ˈdedlaɪn/","pos":"noun","level":"B1","tags":["nouns","work"],"examples":[{"en":"The deadline is next Monday.","ru":"Крайний срок — в следующий понедельник."}]},{"front":"opportunity","back":"возможность, шанс","ipa":"/ˌɒpəˈtjuːnəti/","pos":"noun","level":"B1","tags":["nouns","work"],"examples":[{"en":"It's a good opportunity to practise.","ru":"Это хорошая возможность потренироваться."}],"note":"долгое слово: op-por-TU-ni-ty, две p"},{"front":"advantage","back":"преимущество, плюс","ipa":"/ədˈvɑːntɪdʒ/","pos":"noun","level":"B1","tags":["nouns","work"],"examples":[{"en":"The main advantage is the price.","ru":"Главное преимущество — цена."}]},{"front":"feature","back":"особенность, функция","ipa":"/ˈfiːtʃə/","pos":"noun","level":"B1","tags":["nouns","tech"],"examples":[{"en":"My favourite feature is offline mode.","ru":"Моя любимая функция — офлайн-режим."}]},{"front":"purpose","back":"цель, назначение","ipa":"/ˈpɜːpəs/","pos":"noun","level":"B1","tags":["nouns","work"],"examples":[{"en":"What's the purpose of this button?","ru":"Для чего эта кнопка?"}]},{"front":"budget","back":"бюджет","ipa":"/ˈbʌdʒɪt/","pos":"noun","level":"B1","tags":["nouns","money"],"examples":[{"en":"The project is over budget.","ru":"Проект вышел за бюджет."}]},{"front":"drawback","back":"недостаток, минус","ipa":"/ˈdrɔːbæk/","pos":"noun","level":"B1","tags":["nouns","work"],"examples":[{"en":"The only drawback is the price.","ru":"Единственный минус — цена."}]},{"front":"insight","back":"понимание, ценное наблюдение","ipa":"/ˈɪnsaɪt/","pos":"noun","level":"B2","tags":["nouns","thinking"],"examples":[{"en":"Your comment gave me a useful insight.","ru":"Твой комментарий дал мне полезное понимание."}]},{"front":"workload","back":"объём работы, загруженность","ipa":"/ˈwɜːkləʊd/","pos":"noun","level":"B1","tags":["nouns","work"],"examples":[{"en":"My workload is heavy this month.","ru":"В этом месяце у меня большая загрузка."}]},{"front":"however","back":"однако, тем не менее","ipa":"/haʊˈevə/","pos":"adverb","level":"B1","tags":["связки-речи"],"examples":[{"en":"The idea is good. However, it's expensive.","ru":"Идея хорошая. Однако она дорогая."}]},{"front":"therefore","back":"поэтому, следовательно","ipa":"/ˈðeəfɔː/","pos":"adverb","level":"B1","tags":["связки-речи"],"examples":[{"en":"The train was late; therefore we missed the meeting.","ru":"Поезд опоздал, поэтому мы пропустили встречу."}]},{"front":"on purpose","back":"специально, намеренно","ipa":"/ɒn ˈpɜːpəs/","pos":"phrase","level":"B1","tags":["связки-речи","everyday"],"examples":[{"en":"I didn't do it on purpose.","ru":"Я сделал это не специально."}]},{"front":"at least","back":"по крайней мере, хотя бы","ipa":"/ət ˈliːst/","pos":"phrase","level":"A2","tags":["связки-речи"],"examples":[{"en":"At least we tried.","ru":"По крайней мере, мы попытались."}]},{"front":"as far as I know","back":"насколько я знаю","ipa":"/əz ˈfɑːr əz aɪ ˈnəʊ/","pos":"phrase","level":"B1","tags":["связки-речи","speaking"],"examples":[{"en":"As far as I know, the office is closed today.","ru":"Насколько я знаю, офис сегодня закрыт."}]},{"front":"in advance","back":"заранее","ipa":"/ɪn ədˈvɑːns/","pos":"phrase","level":"B1","tags":["связки-речи","work"],"examples":[{"en":"Please let me know in advance.","ru":"Сообщи мне, пожалуйста, заранее."}]},{"front":"keep in mind","back":"иметь в виду, помнить","ipa":"/kiːp ɪn ˈmaɪnd/","pos":"phrase","level":"B1","tags":["связки-речи","work"],"examples":[{"en":"Keep in mind that prices may change.","ru":"Имей в виду, что цены могут измениться."}]},{"front":"make sense","back":"иметь смысл, быть понятным","ipa":"/meɪk ˈsens/","pos":"phrase","level":"B1","tags":["связки-речи","speaking"],"examples":[{"en":"That makes sense now.","ru":"Теперь это понятно."},{"en":"Does it make sense to you?","ru":"Тебе это понятно?"}]},{"front":"it depends","back":"смотря по обстоятельствам, зависит","ipa":"/ɪt dɪˈpendz/","pos":"phrase","level":"A2","tags":["связки-речи","speaking"],"examples":[{"en":"\"Will you come?\" \"It depends on the weather.\"","ru":"«Придёшь?» — «Зависит от погоды»."}],"note":"depend ON something — предлог on обязателен"},{"front":"by the way","back":"кстати","ipa":"/baɪ ðə ˈweɪ/","pos":"phrase","level":"A2","tags":["связки-речи","speaking"],"examples":[{"en":"By the way, your English sounds better.","ru":"Кстати, твой английский звучит лучше."}]},{"front":"make a decision","back":"принять решение","ipa":"/meɪk ə dɪˈsɪʒn/","pos":"collocation","level":"B1","tags":["сочетания","work"],"examples":[{"en":"We have to make a decision today.","ru":"Мы должны принять решение сегодня."}],"note":"именно make, а не do и не take"},{"front":"take part in","back":"принимать участие в","ipa":"/teɪk ˈpɑːt ɪn/","pos":"collocation","level":"B1","tags":["сочетания","work"],"examples":[{"en":"I took part in the project last year.","ru":"Я участвовал в проекте в прошлом году."}]},{"front":"pay attention to","back":"обращать внимание на","ipa":"/peɪ əˈtenʃn tə/","pos":"collocation","level":"B1","tags":["сочетания","learning"],"examples":[{"en":"Pay attention to the word order.","ru":"Обращай внимание на порядок слов."}]},{"front":"be in charge of","back":"отвечать за, руководить","ipa":"/biː ɪn ˈtʃɑːdʒ əv/","pos":"collocation","level":"B1","tags":["сочетания","work"],"examples":[{"en":"She's in charge of the whole team.","ru":"Она отвечает за всю команду."}]},{"front":"look forward to","back":"с нетерпением ждать","ipa":"/lʊk ˈfɔːwəd tə/","pos":"collocation","level":"B1","tags":["сочетания","speaking"],"examples":[{"en":"I'm looking forward to the weekend.","ru":"Жду выходных с нетерпением."}],"note":"после to идёт -ing: looking forward to seeing you"},{"front":"get used to","back":"привыкать к","ipa":"/ɡet ˈjuːst tə/","pos":"collocation","level":"B1","tags":["сочетания","everyday"],"examples":[{"en":"I'm getting used to waking up early.","ru":"Я привыкаю вставать рано."}],"note":"get used to + -ing (привыкаю); used to do — раньше делал регулярно"},{"front":"have trouble doing","back":"с трудом что-то делать, испытывать сложности","ipa":"/həv ˈtrʌbl ˈduːɪŋ/","pos":"collocation","level":"B1","tags":["сочетания","learning"],"examples":[{"en":"I have trouble understanding fast speech.","ru":"Мне тяжело понимать быструю речь."}]},{"front":"be about to","back":"вот-вот сделать что-то, собираться","ipa":"/bi əˈbaʊt tə/","pos":"collocation","level":"B1","tags":["сочетания","grammar"],"examples":[{"en":"I was about to call you.","ru":"Я как раз собирался тебе позвонить."}]}]};
+
+</script>
+<script>
+/*
+ * ui.js — экраны, тренировка, обмен файлами.
+ */
+(function () {
+  'use strict';
+
+  var S = window.Store, R = window.SRS, RP = window.Report, DK = window.Deck, T = window.TTS;
+  var $ = function (id) { return document.getElementById(id); };
+  var state = null;
+  var session = null;
+  var shown = false;      // ответ уже открыт
+  var startedAt = 0;
+  var suggested = 0;
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  function toast(msg, ms) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { t.classList.remove('show'); }, ms || 2200);
+  }
+
+  function fmtDelay(ms) {
+    if (ms == null) return '';
+    var m = ms / 60000;
+    if (m < 1) return '<1 мин';
+    if (m < 60) return Math.round(m) + ' мин';
+    var h = m / 60;
+    if (h < 24) return Math.round(h) + ' ч';
+    var d = h / 24;
+    if (d < 31) return Math.round(d) + ' дн';
+    var mo = d / 30.4;
+    if (mo < 12) return Math.round(mo) + ' мес';
+    return (d / 365).toFixed(1) + ' г';
+  }
+
+  function applyTheme() {
+    var th = state.settings.theme;
+    if (th === 'auto') {
+      var dark = !window.matchMedia || window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    } else {
+      document.documentElement.setAttribute('data-theme', th);
+    }
+  }
+
+  // ---------------- навигация ----------------
+  var SCREENS = ['home', 'cards', 'stats', 'claude', 'settings'];
+
+  function showScreen(name) {
+    if (name === 'claude-export') { showScreen('claude'); $('block-export').scrollIntoView({ behavior: 'smooth' }); return; }
+    SCREENS.forEach(function (n) {
+      $('screen-' + n).classList.toggle('hidden', n !== name);
+    });
+    $('screen-review').classList.add('hidden');
+    $('tabs').classList.remove('hidden');
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) {
+      b.classList.toggle('active', b.dataset.screen === name);
+    });
+    window.scrollTo(0, 0);
+    if (name === 'home') renderHome();
+    if (name === 'cards') renderCards();
+    if (name === 'stats') renderStats();
+    if (name === 'claude') renderExportPreview();
+    if (name === 'settings') fillSettings();
+  }
+
+  // ---------------- главный экран ----------------
+  function streakDays() {
+    var days = {};
+    state.log.forEach(function (e) { days[RP.dayKey(e.ts)] = 1; });
+    var n = 0, cur = Date.now();
+    if (!days[RP.dayKey(cur)]) cur -= 86400000;
+    while (days[RP.dayKey(cur)]) { n++; cur -= 86400000; }
+    return n;
+  }
+
+  function renderHome() {
+    S.rollDay();
+    var cards = S.cardsArray();
+    var done = { newDone: state.daily.newDone, reviewsDone: state.daily.reviewsDone };
+    var c = R.counts(cards, Date.now(), state.settings, done);
+
+    $('c-new').textContent = c.new;
+    $('c-learn').textContent = c.learning + c.relearn;
+    $('c-due').textContent = c.dueNow;
+    $('c-mature').textContent = c.mature;
+    $('streak').textContent = '🔥 ' + streakDays();
+
+    var todayAnswers = state.daily.newDone + state.daily.reviewsDone;
+    var goal = state.settings.dailyGoal || 40;
+    $('goal-done').textContent = todayAnswers;
+    $('goal-total').textContent = goal;
+    $('goal-fill').style.width = Math.min(100, Math.round(todayAnswers / goal * 100)) + '%';
+
+    Array.prototype.forEach.call(document.querySelectorAll('#mode-chips .chip'), function (b) {
+      b.classList.toggle('active', b.dataset.mode === state.settings.mode);
+    });
+
+    var canStudy = c.toStudy > 0;
+    $('btn-study').disabled = !canStudy;
+    $('btn-study').textContent = canStudy ? 'Учить — ' + c.toStudy : 'На сегодня всё';
+    var note = $('empty-note');
+    if (!cards.length) {
+      note.textContent = 'Колода пустая. Открой вкладку «Клод» и загрузи слова.';
+      note.classList.remove('hidden');
+    } else if (!canStudy) {
+      note.textContent = c.dueNow ? 'Дневной лимит повторений исчерпан.' : 'Повторений нет — возвращайся позже. Хочешь больше? Поднимите лимит новых слов в настройках.';
+      note.classList.remove('hidden');
+    } else {
+      note.classList.add('hidden');
+    }
+  }
+
+  // ---------------- тренировка ----------------
+  function pickMode(card) {
+    var setting = state.settings.mode;
+    var bucket = R.bucketOf(card.srs, state.settings);
+    var hasExample = (card.examples || []).some(function (e) { return e.en; });
+    if (bucket === 'new') return 'recognition';           // новое слово сначала показываем
+    if (setting !== 'mixed') {
+      if (setting === 'listening' && !T.available()) return 'typing';
+      return setting;
+    }
+    var r = Math.random();
+    if (r < 0.40) return 'recognition';
+    if (r < 0.70) return 'typing';
+    if (r < 0.85 && hasExample) return 'cloze';
+    return T.available() ? 'listening' : 'typing';
+  }
+
+  function clozeFrom(card) {
+    var ex = (card.examples || []).filter(function (e) { return e.en; })[0];
+    if (!ex) return null;
+    var word = (card.front || '').trim();
+    if (!word) return null;
+    var re = new RegExp('\\b' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+    if (!re.test(ex.en)) return null;
+    return { text: ex.en.replace(re, '@@GAP@@'), ru: ex.ru || '' };
+  }
+
+  function startSession() {
+    S.rollDay();
+    var done = { newDone: state.daily.newDone, reviewsDone: state.daily.reviewsDone };
+    var q = R.buildQueue(S.cardsArray(), Date.now(), state.settings, done);
+    if (!q.queue.length) { toast('Сейчас нечего повторять'); return; }
+    session = { ids: q.queue.map(function (c) { return c.id; }), idx: 0, done: 0 };
+    $('tabs').classList.add('hidden');
+    SCREENS.forEach(function (n) { $('screen-' + n).classList.add('hidden'); });
+    $('screen-review').classList.remove('hidden');
+    nextCard();
+  }
+
+  function endSession() {
+    session = null;
+    T.stop();
+    showScreen('home');
+  }
+
+  function nextCard() {
+    if (!session) return;
+    if (session.idx >= session.ids.length) {
+      var n = session.done;
+      endSession();
+      toast(n ? 'Готово! Ответов: ' + n : 'Сессия завершена');
+      return;
+    }
+    var card = state.cards[session.ids[session.idx]];
+    if (!card) { session.idx++; return nextCard(); }
+    renderCard(card);
+  }
+
+  function renderCard(card) {
+    shown = false;
+    startedAt = Date.now();
+    suggested = 0;
+    var mode = pickMode(card);
+    if (mode === 'cloze' && !clozeFrom(card)) mode = 'typing';
+    session.mode = mode;
+
+    var remaining = session.ids.length - session.idx;
+    $('review-counter').textContent = session.done + '/' + (session.done + remaining);
+    $('review-bar').style.width = Math.round(session.done / (session.done + remaining) * 100) + '%';
+
+    var q = $('card-question'), ipa = $('card-ipa'), hint = $('card-hint');
+    var ansBox = $('answer-box'), input = $('answer-input');
+    var label = $('card-mode-label');
+    var speak = $('speak-btn');
+
+    $('card-answer').classList.add('hidden');
+    $('verdict').textContent = '';
+    $('verdict').className = 'verdict';
+    $('grades').classList.add('hidden');
+    input.value = '';
+    input.disabled = false;
+    ipa.textContent = '';
+    hint.textContent = '';
+    speak.classList.add('hidden');
+
+    var ttsOn = state.settings.tts && T.available();
+
+    if (mode === 'recognition') {
+      label.textContent = 'узнай слово';
+      q.textContent = card.front;
+      if (state.settings.showIpa && card.ipa) ipa.textContent = card.ipa;
+      ansBox.classList.add('hidden');
+      if (ttsOn) speak.classList.remove('hidden');
+      $('btn-show').classList.remove('hidden');
+      $('btn-check').classList.add('hidden');
+      if (ttsOn && state.settings.autoPlay) T.speak(card.front, { voice: state.settings.ttsVoice, rate: state.settings.ttsRate });
+    } else if (mode === 'typing') {
+      label.textContent = 'напиши по-английски';
+      q.textContent = card.back || '(нет перевода)';
+      if (card.pos) hint.textContent = card.pos;
+      ansBox.classList.remove('hidden');
+      $('btn-show').classList.add('hidden');
+      $('btn-check').classList.remove('hidden');
+      setTimeout(function () { input.focus(); }, 60);
+    } else if (mode === 'listening') {
+      label.textContent = 'на слух — запиши, что услышал';
+      q.textContent = '🎧';
+      hint.textContent = 'нажми кнопку, если не расслышал';
+      speak.classList.remove('hidden');
+      ansBox.classList.remove('hidden');
+      $('btn-show').classList.add('hidden');
+      $('btn-check').classList.remove('hidden');
+      T.speak(card.front, { voice: state.settings.ttsVoice, rate: state.settings.ttsRate });
+      setTimeout(function () { input.focus(); }, 60);
+    } else { // cloze
+      var cz = clozeFrom(card);
+      label.textContent = 'вставь пропущенное слово';
+      q.innerHTML = esc(cz.text).replace('@@GAP@@', '<span class="gap">&nbsp;</span>');
+      if (cz.ru) hint.textContent = cz.ru;
+      ansBox.classList.remove('hidden');
+      $('btn-show').classList.add('hidden');
+      $('btn-check').classList.remove('hidden');
+      setTimeout(function () { input.focus(); }, 60);
+    }
+  }
+
+  function revealAnswer(card, opts) {
+    shown = true;
+    opts = opts || {};
+    var box = $('card-answer');
+    var mode = session.mode;
+
+    $('answer-main').textContent = mode === 'recognition' ? (card.back || '—') : card.front;
+    var meta = [];
+    if (mode !== 'recognition' && card.back) meta.push(card.back);
+    if (card.ipa && state.settings.showIpa) meta.push(card.ipa);
+    if (card.pos) meta.push(card.pos);
+    if (card.level) meta.push(card.level);
+    $('answer-pos').textContent = meta.join(' · ');
+
+    var ul = $('examples');
+    ul.innerHTML = '';
+    (card.examples || []).slice(0, 3).forEach(function (e) {
+      if (!e.en && !e.ru) return;
+      var li = document.createElement('li');
+      var en = esc(e.en);
+      if (card.front) {
+        var re = new RegExp('\\b(' + card.front.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')\\b', 'ig');
+        en = en.replace(re, '<em>$1</em>');
+      }
+      li.innerHTML = '<span class="en">' + en + '</span>' + (e.ru ? '<span class="ru">' + esc(e.ru) + '</span>' : '');
+      ul.appendChild(li);
+    });
+
+    $('card-note').textContent = card.note || '';
+    var tg = $('card-tags');
+    tg.innerHTML = '';
+    (card.tags || []).forEach(function (t) {
+      var s = document.createElement('span'); s.textContent = t; tg.appendChild(s);
+    });
+
+    box.classList.remove('hidden');
+    $('btn-show').classList.add('hidden');
+    $('btn-check').classList.add('hidden');
+    $('grades').classList.remove('hidden');
+
+    var prev = R.previewIntervals(card.srs, Date.now(), state.settings);
+    for (var g = 1; g <= 4; g++) $('ivl-' + g).textContent = fmtDelay(prev[g]);
+
+    if (state.settings.tts && T.available() && (mode !== 'recognition' || !state.settings.autoPlay) && !opts.silent) {
+      T.speak(card.front, { voice: state.settings.ttsVoice, rate: state.settings.ttsRate });
+    }
+  }
+
+  function checkTyped() {
+    var card = state.cards[session.ids[session.idx]];
+    var typed = $('answer-input').value;
+    var res = R.checkAnswer(typed, card.front, state.settings);
+    var v = $('verdict');
+    session.typed = typed;
+    session.verdict = res.verdict;
+    suggested = res.suggestedGrade;
+    if (res.verdict === 'correct') {
+      v.className = 'verdict ok';
+      v.textContent = '✓ верно';
+    } else if (res.verdict === 'typo') {
+      v.className = 'verdict typo';
+      v.innerHTML = '≈ почти: опечатка — <b>' + esc(card.front) + '</b>';
+    } else {
+      v.className = 'verdict err';
+      v.innerHTML = '✗ <s>' + esc(typed || '—') + '</s> → <b>' + esc(card.front) + '</b>';
+    }
+    $('answer-input').disabled = true;
+    revealAnswer(card);
+  }
+
+  function grade(g) {
+    if (!session) return;
+    var id = session.ids[session.idx];
+    var card = state.cards[id];
+    if (!card) return;
+    var ms = Date.now() - startedAt;
+    S.recordReview(id, g, { mode: session.mode, ms: ms, typed: session.typed || '', verdict: session.verdict || '' });
+    session.typed = ''; session.verdict = '';
+    session.done++;
+    session.idx++;
+
+    // если карточка скоро снова нужна (learning / relearn) — вернём её в эту же сессию
+    var srs = card.srs;
+    if (srs.due - Date.now() < 11 * 60000 && srs.state !== 'review') {
+      var insertAt = Math.min(session.ids.length, session.idx + 3);
+      session.ids.splice(insertAt, 0, id);
+    }
+    nextCard();
+  }
+
+  // ---------------- слова ----------------
+  var cardFilter = { q: '', tag: '' };
+
+  function renderCards() {
+    var all = S.cardsArray();
+    $('cards-total').textContent = all.length + ' шт.';
+
+    var tags = {};
+    all.forEach(function (c) { (c.tags || []).forEach(function (t) { tags[t] = (tags[t] || 0) + 1; }); });
+    var tf = $('tag-filter');
+    tf.innerHTML = '';
+    var mk = function (label, val) {
+      var b = document.createElement('button');
+      b.className = 'chip' + (cardFilter.tag === val ? ' active' : '');
+      b.textContent = label;
+      b.onclick = function () { cardFilter.tag = cardFilter.tag === val ? '' : val; renderCards(); };
+      tf.appendChild(b);
+    };
+    Object.keys(tags).sort(function (a, b) { return tags[b] - tags[a]; }).slice(0, 12).forEach(function (t) { mk(t + ' ' + tags[t], t); });
+
+    var q = cardFilter.q.toLowerCase();
+    var list = all.filter(function (c) {
+      if (cardFilter.tag && (c.tags || []).indexOf(cardFilter.tag) < 0) return false;
+      if (!q) return true;
+      return (c.front + ' ' + c.back + ' ' + (c.tags || []).join(' ')).toLowerCase().indexOf(q) >= 0;
+    });
+    list.sort(function (a, b) { return (b.srs.lapses || 0) - (a.srs.lapses || 0) || (a.position || 0) - (b.position || 0); });
+
+    var box = $('cards-list');
+    box.innerHTML = '';
+    if (!list.length) { box.innerHTML = '<p class="muted">Ничего не найдено.</p>'; return; }
+
+    list.slice(0, 300).forEach(function (c) {
+      var b = R.bucketOf(c.srs, state.settings);
+      var div = document.createElement('div');
+      div.className = 'item';
+      var when = c.srs.due ? new Date(c.srs.due).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) : '—';
+      div.innerHTML =
+        '<div class="item-head"><div><div class="item-front">' + esc(c.front) + '</div>' +
+        '<div class="item-back">' + esc(c.back) + '</div></div>' +
+        '<div class="item-meta"><span class="badge ' + b + '">' + b + '</span>' +
+        (c.srs.lapses >= 3 ? ' <span class="badge leech">×' + c.srs.lapses + '</span>' : '') +
+        '<br>' + (b === 'new' ? 'не начато' : when) + '</div></div>';
+      var act = document.createElement('div');
+      act.className = 'item-actions';
+      var speak = document.createElement('button'); speak.className = 'btn'; speak.textContent = '🔊';
+      speak.onclick = function () { T.speak(c.front, { voice: state.settings.ttsVoice, rate: state.settings.ttsRate }); };
+      var sus = document.createElement('button'); sus.className = 'btn'; sus.textContent = c.suspended ? 'Вернуть' : 'Отложить';
+      sus.onclick = function () { c.suspended = !c.suspended; S.save(); renderCards(); };
+      var rst = document.createElement('button'); rst.className = 'btn'; rst.textContent = 'Сброс';
+      rst.onclick = function () { c.srs = R.newSrs(state.settings); S.save(); renderCards(); toast('Прогресс карточки сброшен'); };
+      var del = document.createElement('button'); del.className = 'btn'; del.textContent = '🗑';
+      del.onclick = function () {
+        if (!confirm('Удалить «' + c.front + '»?')) return;
+        delete state.cards[c.id]; S.save(); renderCards();
+      };
+      [speak, sus, rst, del].forEach(function (x) { act.appendChild(x); });
+      div.appendChild(act);
+      box.appendChild(div);
+    });
+    if (list.length > 300) {
+      var p = document.createElement('p'); p.className = 'muted small';
+      p.textContent = 'Показаны первые 300 из ' + list.length + '.';
+      box.appendChild(p);
+    }
+  }
+
+  // ---------------- анализ ----------------
+  function barRow(name, value, text) {
+    var cls = value >= 0.8 ? 'good' : value >= 0.6 ? 'mid' : 'bad';
+    return '<div class="bar-row ' + cls + '"><span class="name">' + esc(name) + '</span>' +
+      '<span class="bar"><i style="width:' + Math.round(value * 100) + '%"></i></span>' +
+      '<span class="val">' + esc(text) + '</span></div>';
+  }
+
+  function renderStats() {
+    var r = RP.buildReport(state);
+    var s = r.summary;
+    var H = [];
+
+    H.push('<div class="stat-grid">' +
+      '<div class="stat"><b>' + s.totalCards + '</b><span>карточек</span></div>' +
+      '<div class="stat"><b>' + (s.accuracy7d == null ? '—' : Math.round(s.accuracy7d * 100) + '%') + '</b><span>точность за 7 дней</span></div>' +
+      '<div class="stat"><b>' + s.reviews7d + '</b><span>ответов за 7 дней</span></div>' +
+      '<div class="stat"><b>' + s.streakDays + '</b><span>дней подряд</span></div>' +
+      '</div>');
+
+    H.push('<div class="block"><h2>Из чего состоит колода</h2>');
+    var tot = Math.max(1, s.totalCards);
+    [['выучено (21+ дн)', s.buckets.mature], ['молодые', s.buckets.young],
+     ['в процессе', s.buckets.learning + s.buckets.relearn], ['не начато', s.buckets.new]].forEach(function (p) {
+      H.push(barRow(p[0], p[1] / tot, String(p[1])));
+    });
+    H.push('</div>');
+
+    if (r.weakTags.length) {
+      H.push('<div class="block"><h2>Темы: где слабее всего</h2>');
+      r.weakTags.slice(0, 10).forEach(function (t) {
+        H.push(barRow(t.tag, t.accuracy, Math.round(t.accuracy * 100) + '%'));
+      });
+      H.push('<p class="muted small">Меньше 70% — просить у Клода мини-урок и дополнительные примеры по этой теме.</p></div>');
+    }
+
+    if (r.leeches.length) {
+      H.push('<div class="block"><h2>Не идут (' + r.leeches.length + ')</h2>');
+      r.leeches.slice(0, 15).forEach(function (c) {
+        H.push('<div class="item"><div class="item-head"><div><div class="item-front">' + esc(c.front) + '</div>' +
+          '<div class="item-back">' + esc(c.back) + '</div></div><div class="item-meta">провалов ' + c.lapses +
+          '<br>' + (c.accuracy == null ? '' : Math.round(c.accuracy * 100) + '%') + '</div></div></div>');
+      });
+      H.push('<p class="muted small">Такие слова полезно пересобрать: попросить у Клода мнемонику, другой перевод или живой пример.</p></div>');
+    }
+
+    if (r.typingErrors.length) {
+      H.push('<div class="block"><h2>Ошибки при вводе</h2>');
+      r.typingErrors.slice(0, 20).forEach(function (e) {
+        H.push('<div class="bar-row"><span class="name">' + esc(e.expected) + '</span>' +
+          '<span class="bar" style="background:none;color:var(--muted);font-size:13px">написал: ' + esc(e.typed) + '</span>' +
+          '<span class="val">' + (e.count > 1 ? '×' + e.count : '') + '</span></div>');
+      });
+      H.push('</div>');
+    }
+
+    if (!s.reviewsTotal) {
+      H.push('<p class="muted center">Пока нет данных — позанимайся немного, и здесь появится разбор.</p>');
+    }
+
+    H.push('<div class="block"><h2>Последние 14 дней</h2>');
+    var byDay = {};
+    r.byDay.forEach(function (d) { byDay[d.date] = d.reviews; });
+    var max = 1;
+    r.byDay.forEach(function (d) { max = Math.max(max, d.reviews); });
+    for (var i = 13; i >= 0; i--) {
+      var d = new Date(Date.now() - i * 86400000);
+      var key = RP.dayKey(d.getTime());
+      var v = byDay[key] || 0;
+      H.push(barRow(key.slice(5), v / max, String(v)));
+    }
+    H.push('</div>');
+
+    $('stats-body').innerHTML = H.join('');
+  }
+
+  // ---------------- импорт / экспорт ----------------
+  function doImport(text, name) {
+    var res = $('import-result');
+    try {
+      var parsed = DK.parse(text, name);
+      if (!parsed.cards.length) throw new Error('не нашёл ни одной карточки');
+      var m = DK.merge(state.cards, parsed, Date.now(), state.nextPosition);
+      state.nextPosition = m.nextPosition;
+      state.decks[m.deck] = { importedAt: Date.now(), count: m.total };
+      state.lastImportAt = Date.now();
+      S.saveNow();
+      res.className = 'result ok';
+      res.textContent = 'Готово: добавлено ' + m.added + ', обновлено ' + m.updated + ' (колода «' + m.deck + '»).';
+      $('import-text').value = '';
+      toast('Добавлено слов: ' + m.added);
+      renderHome();
+    } catch (e) {
+      res.className = 'result err';
+      res.textContent = 'Не получилось: ' + e.message;
+    }
+  }
+
+  function renderExportPreview() {
+    if (!Object.keys(state.cards).length) {
+      $('digest-preview').textContent = 'Пока нечего выгружать — сначала загрузи слова и позанимайся.';
+      return;
+    }
+    $('digest-preview').textContent = RP.buildDigest(state);
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(function () { return true; }).catch(function () { return fallbackCopy(text); });
+    }
+    return Promise.resolve(fallbackCopy(text));
+  }
+
+  function fallbackCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) { return false; }
+  }
+
+  function download(name, text, type) {
+    var blob = new Blob([text], { type: type || 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  }
+
+  function exportName(prefix) {
+    return prefix + '-' + S.todayKey() + '.json';
+  }
+
+  // ---------------- настройки ----------------
+  function fillSettings() {
+    var st = state.settings, p = state.profile;
+    $('set-name').value = p.name || '';
+    $('set-level').value = p.level || 'B1';
+    $('set-goal').value = p.goal || '';
+    $('set-new').value = st.newPerDay;
+    $('set-rev').value = st.reviewsPerDay;
+    $('set-goalnum').value = st.dailyGoal;
+    $('set-tts').checked = !!st.tts;
+    $('set-autoplay').checked = !!st.autoPlay;
+    $('set-ipa').checked = !!st.showIpa;
+    $('set-typo').value = st.typoTolerance;
+    $('set-rate').value = st.ttsRate;
+    $('set-theme').value = st.theme;
+
+    var sel = $('set-voice');
+    sel.innerHTML = '<option value="">по умолчанию</option>';
+    T.englishVoices().forEach(function (v) {
+      var o = document.createElement('option');
+      o.value = v.name; o.textContent = v.name + ' (' + v.lang + ')';
+      sel.appendChild(o);
+    });
+    sel.value = st.ttsVoice || '';
+  }
+
+  function bindSettings() {
+    var bind = function (id, fn) {
+      $(id).addEventListener('change', function () { fn(this); S.saveNow(); toast('Сохранено', 900); });
+    };
+    bind('set-name', function (el) { state.profile.name = el.value.trim(); });
+    bind('set-level', function (el) { state.profile.level = el.value; });
+    bind('set-goal', function (el) { state.profile.goal = el.value.trim(); });
+    bind('set-new', function (el) { state.settings.newPerDay = Math.max(0, +el.value || 0); });
+    bind('set-rev', function (el) { state.settings.reviewsPerDay = Math.max(0, +el.value || 0); });
+    bind('set-goalnum', function (el) { state.settings.dailyGoal = Math.max(5, +el.value || 40); });
+    bind('set-tts', function (el) { state.settings.tts = el.checked; });
+    bind('set-autoplay', function (el) { state.settings.autoPlay = el.checked; });
+    bind('set-ipa', function (el) { state.settings.showIpa = el.checked; });
+    bind('set-typo', function (el) { state.settings.typoTolerance = Math.max(0, Math.min(3, +el.value || 0)); });
+    bind('set-rate', function (el) { state.settings.ttsRate = +el.value; T.speak('spaced repetition', { voice: state.settings.ttsVoice, rate: +el.value }); });
+    bind('set-voice', function (el) { state.settings.ttsVoice = el.value; T.speak('this is my voice', { voice: el.value, rate: state.settings.ttsRate }); });
+    bind('set-theme', function (el) { state.settings.theme = el.value; applyTheme(); });
+
+    $('btn-reset').onclick = function () {
+      if (!confirm('Стереть все карточки и историю? Это необратимо.')) return;
+      if (!confirm('Точно? Сначала лучше сохранить резервную копию.')) return;
+      S.reset().then(function () { state = S.get(); applyTheme(); showScreen('home'); toast('Данные стёрты'); });
+    };
+  }
+
+  // ---------------- события ----------------
+  function bind() {
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) {
+      b.onclick = function () { showScreen(b.dataset.screen); };
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-goto]'), function (b) {
+      b.onclick = function () { showScreen(b.dataset.goto); };
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#mode-chips .chip'), function (b) {
+      b.onclick = function () {
+        state.settings.mode = b.dataset.mode;
+        S.saveNow();
+        renderHome();
+      };
+    });
+
+    $('btn-study').onclick = startSession;
+    $('review-exit').onclick = endSession;
+    $('btn-show').onclick = function () { revealAnswer(state.cards[session.ids[session.idx]]); };
+    $('btn-check').onclick = checkTyped;
+    $('speak-btn').onclick = function () {
+      var c = state.cards[session.ids[session.idx]];
+      T.speak(c.front, { voice: state.settings.ttsVoice, rate: state.settings.ttsRate });
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('.grade'), function (b) {
+      b.onclick = function () { grade(+b.dataset.grade); };
+    });
+    $('answer-input').addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      if (!shown) checkTyped();
+      else grade(suggested || 3);
+    });
+
+    $('btn-import').onclick = function () { doImport($('import-text').value, 'from-claude'); };
+    $('btn-paste').onclick = function () {
+      if (!navigator.clipboard || !navigator.clipboard.readText) { toast('Браузер не даёт читать буфер — вставь вручную'); return; }
+      navigator.clipboard.readText().then(function (t) {
+        $('import-text').value = t;
+        toast('Вставлено — проверь и нажми «Добавить»');
+      }).catch(function () { toast('Не дали доступ к буферу'); });
+    };
+    $('import-file').onchange = function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      var fr = new FileReader();
+      fr.onload = function () { doImport(String(fr.result), f.name.replace(/\.[^.]+$/, '')); };
+      fr.readAsText(f);
+      this.value = '';
+    };
+    $('btn-starter').onclick = function () {
+      if (!window.STARTER_DECK) { toast('Стартовая колода не найдена'); return; }
+      doImport(JSON.stringify(window.STARTER_DECK), 'starter');
+    };
+
+    $('btn-copy-digest').onclick = function () {
+      var text = RP.buildDigest(state);
+      copyText(text).then(function (ok) {
+        var r = $('export-result');
+        r.className = 'result ' + (ok ? 'ok' : 'err');
+        r.textContent = ok ? 'Сводка в буфере — вставляй в чат с Клодом.' : 'Не удалось скопировать. Выдели текст ниже вручную.';
+        state.lastExportAt = Date.now(); S.save();
+      });
+    };
+    $('btn-download').onclick = function () {
+      var rep = RP.buildReport(state);
+      download(exportName('progress'), JSON.stringify(rep, null, 1));
+      state.lastExportAt = Date.now(); S.save();
+      $('export-result').className = 'result ok';
+      $('export-result').textContent = 'Файл сохранён в «Загрузки» — прикрепи его в чат.';
+    };
+    if (navigator.canShare) {
+      $('btn-share').classList.remove('hidden');
+      $('btn-share').onclick = function () {
+        var rep = RP.buildReport(state);
+        var file = new File([JSON.stringify(rep, null, 1)], exportName('progress'), { type: 'application/json' });
+        if (navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file], title: 'Мой прогресс' }).catch(function () {});
+        } else {
+          navigator.share({ text: RP.buildDigest(state) }).catch(function () {});
+        }
+      };
+    }
+
+    $('btn-backup').onclick = function () {
+      download(exportName('backup'), JSON.stringify(state));
+      $('backup-result').className = 'result ok';
+      $('backup-result').textContent = 'Копия сохранена. Держи её на всякий случай.';
+    };
+    $('restore-file').onchange = function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      var fr = new FileReader();
+      fr.onload = function () {
+        try {
+          var data = JSON.parse(String(fr.result));
+          if (!data.cards) throw new Error('это не резервная копия');
+          if (!confirm('Заменить текущие данные копией?')) return;
+          S.replace(data).then(function () {
+            state = S.get(); applyTheme(); showScreen('home'); toast('Данные восстановлены');
+          });
+        } catch (e) {
+          $('backup-result').className = 'result err';
+          $('backup-result').textContent = 'Не получилось: ' + e.message;
+        }
+      };
+      fr.readAsText(f);
+      this.value = '';
+    };
+
+    $('cards-search').addEventListener('input', function () {
+      cardFilter.q = this.value;
+      clearTimeout(bind._t);
+      bind._t = setTimeout(renderCards, 150);
+    });
+
+    if (window.matchMedia) {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+        if (state.settings.theme === 'auto') applyTheme();
+      });
+    }
+    window.addEventListener('beforeunload', function () { S.saveNow(); });
+    document.addEventListener('visibilitychange', function () { if (document.hidden) S.saveNow(); });
+  }
+
+  // ---------------- старт ----------------
+  S.load().then(function (s) {
+    state = s;
+    applyTheme();
+    bind();
+    bindSettings();
+    S.rollDay();
+    showScreen('home');
+    document.body.dataset.ready = '1';
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    }
+  }).catch(function (e) {
+    document.body.innerHTML = '<p style="padding:24px">Не удалось запустить приложение: ' + esc(e.message) + '</p>';
+  });
+})();
+
+</script>
+</body>
+</html>

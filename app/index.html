@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12131a">
+<meta name="description" content="Карточки для изучения английского с интервальным повторением. Работает без интернета, обменивается файлами с Клодом.">
+<title>Английский — карточки</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ================= ТРЕНИРОВКА (полноэкранный режим) ================= -->
+  <section id="screen-review" class="screen review hidden">
+    <header class="review-top">
+      <button class="icon-btn" id="review-exit" aria-label="Выйти">✕</button>
+      <div class="review-progress"><div id="review-bar"></div></div>
+      <div class="review-counter" id="review-counter">0/0</div>
+    </header>
+
+    <div class="card-area">
+      <div class="card" id="card">
+        <div class="card-mode" id="card-mode-label"></div>
+
+        <div class="card-question" id="card-question"></div>
+        <div class="card-ipa" id="card-ipa"></div>
+        <button class="speak-btn hidden" id="speak-btn" aria-label="Прослушать">🔊</button>
+        <div class="card-hint" id="card-hint"></div>
+
+        <div class="answer-box hidden" id="answer-box">
+          <input type="text" id="answer-input" autocomplete="off" autocapitalize="none"
+                 autocorrect="off" spellcheck="false" inputmode="latin" placeholder="напиши по-английски…">
+          <div class="verdict" id="verdict"></div>
+        </div>
+
+        <div class="card-answer hidden" id="card-answer">
+          <div class="answer-main" id="answer-main"></div>
+          <div class="answer-pos" id="answer-pos"></div>
+          <ul class="examples" id="examples"></ul>
+          <div class="card-note" id="card-note"></div>
+          <div class="card-tags" id="card-tags"></div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="review-bottom">
+      <button class="btn primary big" id="btn-show">Показать ответ</button>
+      <button class="btn primary big hidden" id="btn-check">Проверить</button>
+      <div class="grades hidden" id="grades">
+        <button class="grade g1" data-grade="1"><span>Не помню</span><em id="ivl-1"></em></button>
+        <button class="grade g2" data-grade="2"><span>Тяжело</span><em id="ivl-2"></em></button>
+        <button class="grade g3" data-grade="3"><span>Помню</span><em id="ivl-3"></em></button>
+        <button class="grade g4" data-grade="4"><span>Легко</span><em id="ivl-4"></em></button>
+      </div>
+    </footer>
+  </section>
+
+  <!-- ================= ГЛАВНЫЙ ================= -->
+  <section id="screen-home" class="screen">
+    <header class="top">
+      <h1>Английский</h1>
+      <div class="streak" id="streak" title="Серия дней">🔥 0</div>
+    </header>
+
+    <div class="pad">
+      <div class="goal-card">
+        <div class="goal-row">
+          <span>Цель на день</span>
+          <b><span id="goal-done">0</span> / <span id="goal-total">40</span></b>
+        </div>
+        <div class="goal-bar"><div id="goal-fill"></div></div>
+      </div>
+
+      <div class="counts">
+        <div class="count new"><b id="c-new">0</b><span>новых</span></div>
+        <div class="count learn"><b id="c-learn">0</b><span>учу</span></div>
+        <div class="count due"><b id="c-due">0</b><span>к повтору</span></div>
+        <div class="count mature"><b id="c-mature">0</b><span>выучено</span></div>
+      </div>
+
+      <div class="modes">
+        <label class="mode-label">Режим</label>
+        <div class="chips" id="mode-chips">
+          <button class="chip" data-mode="mixed">Всё вперемешку</button>
+          <button class="chip" data-mode="recognition">EN → RU</button>
+          <button class="chip" data-mode="typing">Писать по-английски</button>
+          <button class="chip" data-mode="listening">На слух</button>
+        </div>
+      </div>
+
+      <button class="btn primary huge" id="btn-study">Учить</button>
+      <p class="empty-note hidden" id="empty-note"></p>
+
+      <div class="quick">
+        <button class="tile" data-goto="claude"><b>📥</b><span>Загрузить слова от Клода</span></button>
+        <button class="tile" data-goto="claude-export"><b>📤</b><span>Отправить прогресс Клоду</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= СЛОВА ================= -->
+  <section id="screen-cards" class="screen hidden">
+    <header class="top"><h1>Слова</h1><div class="muted" id="cards-total"></div></header>
+    <div class="pad">
+      <input type="search" id="cards-search" placeholder="поиск по слову, переводу, тегу…">
+      <div class="chips small" id="tag-filter"></div>
+      <div class="list" id="cards-list"></div>
+    </div>
+  </section>
+
+  <!-- ================= АНАЛИЗ ================= -->
+  <section id="screen-stats" class="screen hidden">
+    <header class="top"><h1>Анализ</h1></header>
+    <div class="pad" id="stats-body"></div>
+  </section>
+
+  <!-- ================= КЛОД ================= -->
+  <section id="screen-claude" class="screen hidden">
+    <header class="top"><h1>Клод</h1></header>
+    <div class="pad">
+
+      <div class="block">
+        <h2>📥 Новые слова</h2>
+        <p class="muted">Вставь то, что прислал Клод: JSON колоды, или просто строчки вида
+          <code>take off — снимать; взлетать</code>.</p>
+        <textarea id="import-text" rows="7" placeholder='{"format":"anki-lite/deck", ...}   или   word — перевод'></textarea>
+        <div class="row">
+          <button class="btn primary" id="btn-import">Добавить в колоду</button>
+          <button class="btn" id="btn-paste">Из буфера</button>
+          <label class="btn file">Файл<input type="file" id="import-file" accept=".json,.txt,.csv,.tsv,application/json,text/plain"></label>
+        </div>
+        <div class="result" id="import-result"></div>
+        <button class="btn link" id="btn-starter">Загрузить стартовую колоду (A2–B1, 60 слов)</button>
+      </div>
+
+      <div class="block" id="block-export">
+        <h2>📤 Мой прогресс</h2>
+        <p class="muted">Отдай это Клоду — он разберёт ошибки и пришлёт следующую порцию.
+          Короткую сводку проще вставить в чат, файл — точнее и подробнее.</p>
+        <div class="row">
+          <button class="btn primary" id="btn-copy-digest">Скопировать сводку</button>
+          <button class="btn" id="btn-download">Скачать файл</button>
+          <button class="btn hidden" id="btn-share">Поделиться</button>
+        </div>
+        <div class="result" id="export-result"></div>
+        <pre class="preview" id="digest-preview"></pre>
+      </div>
+
+      <div class="block">
+        <h2>💾 Резервная копия</h2>
+        <div class="row">
+          <button class="btn" id="btn-backup">Сохранить копию</button>
+          <label class="btn file">Восстановить<input type="file" id="restore-file" accept=".json,application/json"></label>
+        </div>
+        <div class="result" id="backup-result"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= НАСТРОЙКИ ================= -->
+  <section id="screen-settings" class="screen hidden">
+    <header class="top"><h1>Настройки</h1></header>
+    <div class="pad">
+      <div class="block">
+        <h2>Профиль</h2>
+        <label class="field">Как тебя зовут<input type="text" id="set-name"></label>
+        <label class="field">Уровень
+          <select id="set-level"><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option></select>
+        </label>
+        <label class="field">Цель (зачем учишь)<input type="text" id="set-goal" placeholder="работа, сериалы, переезд…"></label>
+      </div>
+      <div class="block">
+        <h2>Нагрузка</h2>
+        <label class="field">Новых слов в день <input type="number" id="set-new" min="0" max="100"></label>
+        <label class="field">Повторений в день <input type="number" id="set-rev" min="0" max="500"></label>
+        <label class="field">Цель по ответам за день <input type="number" id="set-goalnum" min="5" max="500"></label>
+      </div>
+      <div class="block">
+        <h2>Озвучка и ввод</h2>
+        <label class="check"><input type="checkbox" id="set-tts"> Озвучивать слова</label>
+        <label class="check"><input type="checkbox" id="set-autoplay"> Проговаривать автоматически</label>
+        <label class="field">Голос<select id="set-voice"></select></label>
+        <label class="field">Скорость речи <input type="range" id="set-rate" min="0.5" max="1.2" step="0.05"></label>
+        <label class="check"><input type="checkbox" id="set-ipa"> Показывать транскрипцию</label>
+        <label class="field">Допуск опечаток (букв) <input type="number" id="set-typo" min="0" max="3"></label>
+      </div>
+      <div class="block">
+        <h2>Вид</h2>
+        <label class="field">Тема
+          <select id="set-theme"><option value="auto">Как в системе</option><option value="dark">Тёмная</option><option value="light">Светлая</option></select>
+        </label>
+      </div>
+      <div class="block danger">
+        <h2>Опасная зона</h2>
+        <button class="btn danger" id="btn-reset">Стереть все данные</button>
+      </div>
+      <p class="muted center small">Всё хранится только на этом устройстве. Приложение не отправляет данные в сеть.</p>
+    </div>
+  </section>
+
+  <!-- ================= НИЖНЯЯ НАВИГАЦИЯ ================= -->
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-screen="home"><b>🎯</b><span>Учить</span></button>
+    <button class="tab" data-screen="cards"><b>📚</b><span>Слова</span></button>
+    <button class="tab" data-screen="stats"><b>📈</b><span>Анализ</span></button>
+    <button class="tab" data-screen="claude"><b>💬</b><span>Клод</span></button>
+    <button class="tab" data-screen="settings"><b>⚙️</b><span>Ещё</span></button>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="js/srs.js"></script>
+<script src="js/deck.js"></script>
+<script src="js/store.js"></script>
+<script src="js/report.js"></script>
+<script src="js/tts.js"></script>
+<script src="js/starter.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>

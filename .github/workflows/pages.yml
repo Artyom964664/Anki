@@ -1,0 +1,45 @@
+name: Deploy app to Pages
+
+# Чтобы это заработало: Settings -> Pages -> Source -> GitHub Actions (один раз).
+on:
+  push:
+    branches: [main, master, claude/functionality-check-8jgv4g]
+    paths: ['app/**', 'decks/**', 'tools/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Тесты
+        run: node --test tests/*.test.js
+      - name: Сборка (стартовая колода + однофайловая версия)
+        run: node tools/build.mjs
+      - name: Положить однофайловую версию рядом с приложением
+        run: cp dist/anki-lite.html app/anki-lite-single.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: app
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
