@@ -1,5 +1,7 @@
 /* Service worker: приложение целиком кладётся в кэш, поэтому работает без интернета. */
-var VERSION = 'anki-lite-v1';
+/* Строка ниже генерируется tools/build.mjs из содержимого сборки — руками не править:
+   когда меняется хоть один файл, меняется и имя кэша, и браузер забирает новую версию. */
+var VERSION = 'anki-lite-d868bd1813';
 var ASSETS = [
   './',
   './index.html',
@@ -11,6 +13,7 @@ var ASSETS = [
   './js/tts.js',
   './js/starter.js',
   './js/docs.js',
+  './js/build.js',
   './js/ui.js',
   './manifest.webmanifest',
   './icons/icon-192.png',

@@ -8,11 +8,15 @@
  * Запуск: node tools/build.mjs
  */
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const app = join(root, 'app');
+
+// порядок важен: ровно в этом виде скрипты подключены в index.html
+const scriptNames = ['srs.js', 'deck.js', 'store.js', 'report.js', 'tts.js', 'starter.js', 'docs.js', 'build.js', 'ui.js'];
 
 // ---------- 1. стартовая колода в js ----------
 const deckPath = join(root, 'decks', 'starter-en-a2-b1.json');
@@ -42,11 +46,29 @@ writeFileSync(join(app, 'js', 'docs.js'),
   'window.DOCS = ' + JSON.stringify(docs) + ';\n');
 console.log('ok  app/js/docs.js —', Math.round(JSON.stringify(docs).length / 1024), 'КБ');
 
-// ---------- 3. однофайловая сборка ----------
+// ---------- 3. штамп сборки в service worker ----------
+// Без этого браузер продолжает отдавать старую закешированную версию: имя кэша
+// не меняется, обновление не устанавливается. Считаем хеш от всего, что публикуем.
 const html = readFileSync(join(app, 'index.html'), 'utf8');
 const css = readFileSync(join(app, 'css', 'style.css'), 'utf8');
-const scripts = ['srs.js', 'deck.js', 'store.js', 'report.js', 'tts.js', 'starter.js', 'docs.js', 'ui.js'];
+const swPath = join(app, 'sw.js');
+const swSrc = readFileSync(swPath, 'utf8');
 
+const stampSource = [html, css]
+  .concat(scriptNames.filter((n) => n !== 'build.js').map((n) => readFileSync(join(app, 'js', n), 'utf8')))
+  .join(' ');
+const stamp = createHash('sha256').update(stampSource).digest('hex').slice(0, 10);
+
+const swOut = swSrc.replace(/var VERSION = '[^']*';/, () => "var VERSION = 'anki-lite-" + stamp + "';");
+if (!swOut.includes(stamp)) throw new Error('не удалось записать штамп сборки в sw.js');
+if (swOut !== swSrc) writeFileSync(swPath, swOut);
+console.log('ok  app/sw.js — версия кэша anki-lite-' + stamp);
+
+writeFileSync(join(app, 'js', 'build.js'),
+  '/* Сгенерировано tools/build.mjs — руками не править. */\n' +
+  'window.BUILD = ' + JSON.stringify({ stamp: stamp, date: new Date().toISOString().slice(0, 10) }) + ';\n');
+
+// ---------- 4. однофайловая сборка ----------
 // ВАЖНО: подставляем через функцию, иначе $& / $1 внутри кода будут съедены replace()
 let out = html
   .replace('<link rel="stylesheet" href="css/style.css">', () => '<style>\n' + css + '\n</style>')
@@ -54,7 +76,7 @@ let out = html
   .replace(/<link rel="icon"[^>]*>\s*/, '')
   .replace(/<link rel="apple-touch-icon"[^>]*>\s*/, '');
 
-for (const name of scripts) {
+for (const name of scriptNames) {
   const code = readFileSync(join(app, 'js', name), 'utf8');
   const tag = '<script src="js/' + name + '"></script>';
   if (!out.includes(tag)) throw new Error('в index.html нет тега для ' + name);

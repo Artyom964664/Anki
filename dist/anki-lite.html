@@ -469,6 +469,8 @@ textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-siz
         <button class="btn danger" id="btn-reset">Стереть все данные</button>
       </div>
       <p class="muted center small">Всё хранится только на этом устройстве. Приложение не отправляет данные в сеть.</p>
+      <p class="muted center small" id="build-info"></p>
+      <div class="row"><button class="btn" id="btn-update">Проверить обновление</button></div>
     </div>
   </section>
 
@@ -1615,6 +1617,11 @@ window.DOCS = {"tutor":"# Инструкция для модели: как бы�
 
 </script>
 <script>
+/* Сгенерировано tools/build.mjs — руками не править. */
+window.BUILD = {"stamp":"d868bd1813","date":"2026-07-30"};
+
+</script>
+<script>
 /*
  * ui.js — экраны, тренировка, обмен файлами.
  */
@@ -2202,6 +2209,23 @@ window.DOCS = {"tutor":"# Инструкция для модели: как бы�
     bind('set-voice', function (el) { state.settings.ttsVoice = el.value; T.speak('this is my voice', { voice: el.value, rate: state.settings.ttsRate }); });
     bind('set-theme', function (el) { state.settings.theme = el.value; applyTheme(); });
 
+    var build = window.BUILD || {};
+    $('build-info').textContent = 'Версия: ' + (build.date || '—') + ' (' + (build.stamp || 'dev').slice(0, 7) + ')';
+
+    $('btn-update').onclick = function () {
+      if (!('serviceWorker' in navigator)) { toast('Обновления недоступны'); return; }
+      toast('Проверяю…', 1200);
+      navigator.serviceWorker.getRegistration().then(function (r) {
+        if (!r) { location.reload(); return; }
+        return r.update().then(function () {
+          setTimeout(function () {
+            if (r.waiting || r.installing) toast('Есть новая версия, устанавливаю…');
+            else toast('У тебя уже последняя версия');
+          }, 1200);
+        });
+      }).catch(function () { location.reload(); });
+    };
+
     $('btn-reset').onclick = function () {
       if (!confirm('Стереть все карточки и историю? Это необратимо.')) return;
       if (!confirm('Точно? Сначала лучше сохранить резервную копию.')) return;
@@ -2395,7 +2419,27 @@ window.DOCS = {"tutor":"# Инструкция для модели: как бы�
     showScreen('home');
     document.body.dataset.ready = '1';
     if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+      // Приложение работает из кэша, поэтому новую версию нужно подхватывать самим:
+      // без этого пользователь неделями видит старую сборку и не понимает, почему.
+      var hadController = !!navigator.serviceWorker.controller;
+      var reloading = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (!hadController || reloading) return;   // первая установка — перезагружать нечего
+        reloading = true;
+        if (session) {                             // не выдёргиваем из середины тренировки
+          toast('Обновление готово — применится после выхода из тренировки', 4000);
+          reloading = false;
+          return;
+        }
+        toast('Обновляю приложение…', 1500);
+        setTimeout(function () { location.reload(); }, 400);
+      });
       navigator.serviceWorker.register('sw.js').catch(function () {});
+      // проверяем обновление при каждом возврате в приложение
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) return;
+        navigator.serviceWorker.getRegistration().then(function (r) { if (r) r.update(); }).catch(function () {});
+      });
     }
   }).catch(function (e) {
     document.body.innerHTML = '<p style="padding:24px">Не удалось запустить приложение: ' + esc(e.message) + '</p>';
