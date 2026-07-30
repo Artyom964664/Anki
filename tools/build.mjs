@@ -26,10 +26,26 @@ writeFileSync(join(app, 'js', 'starter.js'),
   'window.STARTER_DECK = ' + JSON.stringify(deck) + ';\n');
 console.log('ok  app/js/starter.js —', deck.cards.length, 'карточек');
 
-// ---------- 2. однофайловая сборка ----------
+// ---------- 2. инструкции для модели внутрь приложения ----------
+// Чтобы их можно было скопировать или отправить прямо из приложения, без интернета.
+const docs = {
+  tutor: readFileSync(join(root, 'CLAUDE_INSTRUCTIONS.md'), 'utf8'),
+  short: readFileSync(join(root, 'ДЛЯ-НЕЙРОНКИ.md'), 'utf8'),
+  formats: readFileSync(join(root, 'FORMATS.md'), 'utf8'),
+  profile: readFileSync(join(root, 'PROFILE.md'), 'utf8')
+};
+for (const [name, text] of Object.entries(docs)) {
+  if (text.length < 500) throw new Error('документ ' + name + ' подозрительно короткий');
+}
+writeFileSync(join(app, 'js', 'docs.js'),
+  '/* Сгенерировано tools/build.mjs из md-файлов в корне — руками не править. */\n' +
+  'window.DOCS = ' + JSON.stringify(docs) + ';\n');
+console.log('ok  app/js/docs.js —', Math.round(JSON.stringify(docs).length / 1024), 'КБ');
+
+// ---------- 3. однофайловая сборка ----------
 const html = readFileSync(join(app, 'index.html'), 'utf8');
 const css = readFileSync(join(app, 'css', 'style.css'), 'utf8');
-const scripts = ['srs.js', 'deck.js', 'store.js', 'report.js', 'tts.js', 'starter.js', 'ui.js'];
+const scripts = ['srs.js', 'deck.js', 'store.js', 'report.js', 'tts.js', 'starter.js', 'docs.js', 'ui.js'];
 
 // ВАЖНО: подставляем через функцию, иначе $& / $1 внутри кода будут съедены replace()
 let out = html

@@ -140,6 +140,26 @@
         <button class="btn link" id="btn-starter">Загрузить стартовую колоду (A2–B1, 60 слов)</button>
       </div>
 
+      <div class="block" id="block-tutor">
+        <h2>📋 Инструкция для Клода</h2>
+        <p class="muted">Один раз отдай её модели — и она будет разбирать твои ошибки и присылать
+          колоды в понятном приложению формате. Проще всего скопировать первое сообщение
+          и вставить в чат.</p>
+        <div class="row">
+          <button class="btn primary" id="btn-copy-first">Скопировать первое сообщение</button>
+          <button class="btn" id="btn-copy-tutor">Скопировать инструкцию</button>
+        </div>
+        <div class="row">
+          <button class="btn" id="btn-download-tutor">Скачать файлом</button>
+          <button class="btn hidden" id="btn-share-tutor">Отправить</button>
+        </div>
+        <div class="result" id="tutor-result"></div>
+        <details>
+          <summary class="muted small">Посмотреть, что внутри</summary>
+          <pre class="preview" id="tutor-preview"></pre>
+        </details>
+      </div>
+
       <div class="block" id="block-export">
         <h2>📤 Мой прогресс</h2>
         <p class="muted">Отдай это Клоду — он разберёт ошибки и пришлёт следующую порцию.
@@ -224,6 +244,7 @@
 <script src="js/report.js"></script>
 <script src="js/tts.js"></script>
 <script src="js/starter.js"></script>
+<script src="js/docs.js"></script>
 <script src="js/ui.js"></script>
 </body>
 </html>

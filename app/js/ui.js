@@ -647,6 +647,57 @@
       doImport(JSON.stringify(window.STARTER_DECK), 'starter');
     };
 
+    // ---- инструкция для модели ----
+    var docs = window.DOCS || {};
+    var firstMessage = [
+      'Ты мой репетитор английского. Работай по инструкции ниже — это регламент из моего',
+      'приложения-карточек: я учу слова, а ты разбираешь мои ошибки и присылаешь новые колоды',
+      'в формате anki-lite/deck (шаблон есть в инструкции).',
+      '',
+      'Для начала: поищи в наших прошлых чатах, как мы занимались английским, собери мой профиль',
+      'и предложи, с чего начать. Чего не найдёшь — спроси, но не больше пяти вопросов.',
+      '',
+      '--- ИНСТРУКЦИЯ ---',
+      '',
+      docs.tutor || ''
+    ].join('\n');
+
+    if (docs.tutor) $('tutor-preview').textContent = docs.tutor.slice(0, 4000) + '\n\n…';
+
+    var tutorMsg = function (ok, text) {
+      var r = $('tutor-result');
+      r.className = 'result ' + (ok ? 'ok' : 'err');
+      r.textContent = text;
+    };
+
+    $('btn-copy-first').onclick = function () {
+      copyText(firstMessage).then(function (ok) {
+        tutorMsg(ok, ok ? 'Готово — открой чат с Клодом и вставь одним сообщением.'
+                       : 'Не удалось скопировать. Скачай файлом и приложи в чат.');
+      });
+    };
+    $('btn-copy-tutor').onclick = function () {
+      copyText(docs.tutor || '').then(function (ok) {
+        tutorMsg(ok, ok ? 'Инструкция в буфере. Лучше всего вставить её в Project → Instructions.'
+                       : 'Не удалось скопировать. Скачай файлом.');
+      });
+    };
+    $('btn-download-tutor').onclick = function () {
+      download('CLAUDE_INSTRUCTIONS.md', docs.tutor || '', 'text/markdown');
+      tutorMsg(true, 'Файл в «Загрузках» — приложи его скрепкой в чат.');
+    };
+    if (navigator.canShare) {
+      $('btn-share-tutor').classList.remove('hidden');
+      $('btn-share-tutor').onclick = function () {
+        var file = new File([docs.tutor || ''], 'CLAUDE_INSTRUCTIONS.md', { type: 'text/markdown' });
+        if (navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file], title: 'Инструкция для репетитора' }).catch(function () {});
+        } else {
+          navigator.share({ text: firstMessage }).catch(function () {});
+        }
+      };
+    }
+
     $('btn-copy-digest').onclick = function () {
       var text = RP.buildDigest(state);
       copyText(text).then(function (ok) {

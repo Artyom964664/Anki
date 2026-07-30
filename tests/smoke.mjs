@@ -142,6 +142,30 @@ check('в выгрузке учтены ошибки ввода', parsedReport.t
   JSON.stringify(parsedReport.typingErrors[0] || {}));
 await shot('08-claude');
 
+// ---------- 8б. инструкция для модели прямо в приложении ----------
+const tutorLen = await page.evaluate(() => (window.DOCS && window.DOCS.tutor || '').length);
+check('инструкция вшита в приложение', tutorLen > 5000, tutorLen + ' символов');
+check('в инструкции есть памятка и формат колоды', await page.evaluate(() =>
+  /Памятка ученику/.test(window.DOCS.tutor) && /anki-lite\/deck/.test(window.DOCS.tutor)));
+check('видны кнопки «первое сообщение» и «скачать»',
+  (await page.isVisible('#btn-copy-first')) && (await page.isVisible('#btn-download-tutor')));
+
+await ctx.grantPermissions(['clipboard-read', 'clipboard-write']);
+await page.click('#btn-copy-first');
+await page.waitForFunction(() => document.getElementById('tutor-result').textContent.length > 0);
+const clip = await page.evaluate(() => navigator.clipboard.readText().catch(() => ''));
+check('первое сообщение копируется в буфер', /репетитор английского/.test(clip) && clip.length > 5000,
+  clip.length + ' символов');
+check('в скопированном есть и просьба, и сама инструкция',
+  /поищи в наших прошлых чатах/i.test(clip) && /ИНСТРУКЦИЯ/.test(clip) && /Слабые темы|weakTags/.test(clip));
+
+const dl = page.waitForEvent('download', { timeout: 5000 }).catch(() => null);
+await page.click('#btn-download-tutor');
+const file = await dl;
+check('инструкция скачивается файлом', !!file && file.suggestedFilename() === 'CLAUDE_INSTRUCTIONS.md',
+  file ? file.suggestedFilename() : 'загрузка не началась');
+await shot('12-tutor');
+
 // ---------- 9. данные выживают перезагрузку ----------
 const before = await page.evaluate(() => Object.keys(window.Store.get().cards).length);
 const logBefore = await page.evaluate(() => window.Store.get().log.length);

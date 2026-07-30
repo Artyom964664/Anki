@@ -10,6 +10,7 @@ var ASSETS = [
   './js/report.js',
   './js/tts.js',
   './js/starter.js',
+  './js/docs.js',
   './js/ui.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
