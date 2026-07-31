@@ -68,7 +68,7 @@
     if (name === 'cards') renderCards();
     if (name === 'stats') renderStats();
     if (name === 'claude') renderExportPreview();
-    if (name === 'settings') fillSettings();
+    if (name === 'settings') { fillSettings(); refreshInstallState(); }
   }
 
   // ---------------- главный экран ----------------
@@ -626,6 +626,8 @@
     });
 
     $('btn-study').onclick = startSession;
+    $('btn-install').onclick = doInstall;
+    $('btn-install-2').onclick = doInstall;
     $('review-exit').onclick = endSession;
     $('btn-show').onclick = function () { revealAnswer(state.cards[session.ids[session.idx]]); };
     $('btn-check').onclick = checkTyped;
@@ -784,6 +786,86 @@
     window.addEventListener('beforeunload', function () { S.saveNow(); });
     document.addEventListener('visibilitychange', function () { if (document.hidden) S.saveNow(); });
   }
+
+  // ---------------- установка на домашний экран ----------------
+  // Chrome прячет пункт «Установить приложение» в разных местах меню, а иногда не
+  // показывает вовсе. Поэтому ловим системное событие и показываем свою кнопку,
+  // а если событие не пришло — объясняем причину прямо в настройках.
+  var installPrompt = null;
+
+  function installed() {
+    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+      window.navigator.standalone === true;
+  }
+
+  function setInstallUi(text, showButton) {
+    var s = $('install-state');
+    if (s) { s.className = 'result' + (showButton ? ' ok' : ''); s.textContent = text; }
+    ['btn-install', 'btn-install-2'].forEach(function (id) {
+      var b = $(id);
+      if (b) b.classList.toggle('hidden', !showButton);
+    });
+  }
+
+  function installDiagnostics() {
+    var lines = [];
+    lines.push('адрес: ' + location.href);
+    lines.push('защищённое соединение: ' + (window.isSecureContext ? 'да' : 'нет'));
+    lines.push('режим приложения: ' + (installed() ? 'да (уже установлено)' : 'нет, открыто в браузере'));
+    lines.push('service worker: ' + (navigator.serviceWorker && navigator.serviceWorker.controller ? 'управляет страницей' : 'ещё не управляет'));
+    lines.push('системное предложение установки: ' + (installPrompt ? 'получено' : 'не приходило'));
+    var el = $('install-diag');
+    if (!el) return;
+    el.textContent = lines.join('\n');
+    fetch('manifest.webmanifest').then(function (r) {
+      return r.ok ? r.json() : null;
+    }).then(function (m) {
+      el.textContent = lines.concat([
+        'манифест: ' + (m ? 'загружен, display=' + m.display + ', иконок ' + m.icons.length : 'НЕ загрузился')
+      ]).join('\n');
+    }).catch(function () {
+      el.textContent = lines.concat(['манифест: ошибка загрузки']).join('\n');
+    });
+  }
+
+  function doInstall() {
+    if (!installPrompt) { toast('Браузер пока не предлагает установку'); return; }
+    installPrompt.prompt();
+    installPrompt.userChoice.then(function (res) {
+      if (res && res.outcome === 'accepted') {
+        toast('Приложение установлено — ищи значок на домашнем экране', 3500);
+      }
+      installPrompt = null;
+      refreshInstallState();
+    }).catch(function () {});
+  }
+
+  function refreshInstallState() {
+    if (installed()) {
+      setInstallUi('Приложение уже установлено — открывай его со значка на домашнем экране.', false);
+    } else if (installPrompt) {
+      setInstallUi('Можно установить: нажми кнопку ниже.', true);
+    } else if (!window.isSecureContext) {
+      setInstallUi('Установка недоступна: страница открыта не по https.', false);
+    } else {
+      setInstallUi('Браузер ещё не предложил установку. Обнови страницу через несколько секунд ' +
+        'или воспользуйся меню ⋮ → «Добавить на главный экран».', false);
+    }
+    installDiagnostics();
+  }
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    installPrompt = e;
+    refreshInstallState();
+    toast('Приложение можно установить — кнопка на главном экране', 3500);
+  });
+
+  window.addEventListener('appinstalled', function () {
+    installPrompt = null;
+    refreshInstallState();
+    toast('Готово, приложение установлено');
+  });
 
   // ---------------- старт ----------------
   S.load().then(function (s) {

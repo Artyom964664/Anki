@@ -98,6 +98,8 @@
       <button class="btn primary huge" id="btn-study">Учить</button>
       <p class="empty-note hidden" id="empty-note"></p>
 
+      <button class="btn big hidden" id="btn-install" style="margin-top:12px">📲 Установить приложение</button>
+
       <div class="quick">
         <button class="tile" data-goto="claude"><b>📥</b><span>Загрузить слова от Клода</span></button>
         <button class="tile" data-goto="claude-export"><b>📤</b><span>Отправить прогресс Клоду</span></button>
@@ -225,6 +227,12 @@
       <p class="muted center small">Всё хранится только на этом устройстве. Приложение не отправляет данные в сеть.</p>
       <p class="muted center small" id="build-info"></p>
       <div class="row"><button class="btn" id="btn-update">Проверить обновление</button></div>
+      <div class="block">
+        <h2>Установка на телефон</h2>
+        <div class="result" id="install-state">проверяю…</div>
+        <button class="btn hidden" id="btn-install-2">📲 Установить приложение</button>
+        <pre class="preview small" id="install-diag"></pre>
+      </div>
     </div>
   </section>
 
