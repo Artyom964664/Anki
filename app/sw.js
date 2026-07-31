@@ -1,7 +1,7 @@
 /* Service worker: приложение целиком кладётся в кэш, поэтому работает без интернета. */
 /* Строка ниже генерируется tools/build.mjs из содержимого сборки — руками не править:
    когда меняется хоть один файл, меняется и имя кэша, и браузер забирает новую версию. */
-var VERSION = 'anki-lite-b24bd26696';
+var VERSION = 'anki-lite-037b7769b6';
 var ASSETS = [
   './',
   './index.html',
@@ -36,7 +36,17 @@ self.addEventListener('activate', function (e) {
     caches.keys().then(function (keys) {
       return Promise.all(keys.filter(function (k) { return k !== VERSION; })
         .map(function (k) { return caches.delete(k); }));
-    }).then(function () { return self.clients.claim(); })
+    })
+      .then(function () { return self.clients.claim(); })
+      .then(function () { return self.clients.matchAll({ type: 'window' }); })
+      .then(function (clients) {
+        // Открытые окна показывают старую разметку из прежнего кэша. Перезагружаем их
+        // сами, иначе пользователю пришлось бы обновлять страницу вручную несколько раз.
+        clients.forEach(function (c) {
+          try { c.navigate(c.url); } catch (err) {}
+        });
+      })
+      .catch(function () {})
   );
 });
 
