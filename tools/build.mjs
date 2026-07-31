@@ -54,7 +54,9 @@ const css = readFileSync(join(app, 'css', 'style.css'), 'utf8');
 const swPath = join(app, 'sw.js');
 const swSrc = readFileSync(swPath, 'utf8');
 
-const stampSource = [html, css]
+// build.js в хеш не входит: он сам содержит штамп, иначе хеш зависел бы от себя.
+// sw.js входит, но без строки VERSION — по той же причине.
+const stampSource = [html, css, swSrc.replace(/var VERSION = '[^']*';/, '')]
   .concat(scriptNames.filter((n) => n !== 'build.js').map((n) => readFileSync(join(app, 'js', n), 'utf8')))
   .join(' ');
 const stamp = createHash('sha256').update(stampSource).digest('hex').slice(0, 10);
