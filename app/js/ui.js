@@ -810,7 +810,13 @@
         toast('Обновляю приложение…', 1500);
         setTimeout(function () { location.reload(); }, 400);
       });
-      navigator.serviceWorker.register('sw.js').catch(function () {});
+      navigator.serviceWorker.register('sw.js').then(function (reg) {
+        // Убираем чужие регистрации с других путей того же домена: старый service worker
+        // из предыдущей публикации иначе продолжает отдавать свою версию приложения.
+        navigator.serviceWorker.getRegistrations().then(function (all) {
+          all.forEach(function (r) { if (r.scope !== reg.scope) r.unregister(); });
+        }).catch(function () {});
+      }).catch(function () {});
       // проверяем обновление при каждом возврате в приложение
       document.addEventListener('visibilitychange', function () {
         if (document.hidden) return;

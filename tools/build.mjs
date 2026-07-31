@@ -7,7 +7,7 @@
  *
  * Запуск: node tools/build.mjs
  */
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, cpSync, rmSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -91,3 +91,18 @@ if (/<link rel="stylesheet"/.test(out)) throw new Error('стили не вст�
 mkdirSync(join(root, 'dist'), { recursive: true });
 writeFileSync(join(root, 'dist', 'anki-lite.html'), out);
 console.log('ok  dist/anki-lite.html —', Math.round(out.length / 1024), 'КБ');
+
+// ---------- 5. копия приложения по адресу /v2/ ----------
+// Обход застрявшего кэша: старый service worker живёт в области /Anki/ и про этот путь
+// ничего не знает, поэтому первая же загрузка приходит из сети. Данные не теряются —
+// они привязаны к домену, а не к пути. Заодно это полноценный PWA-адрес со своим scope.
+const v2 = join(app, 'v2');
+rmSync(v2, { recursive: true, force: true });
+mkdirSync(v2, { recursive: true });
+for (const rel of ['index.html', 'manifest.webmanifest', 'sw.js']) {
+  cpSync(join(app, rel), join(v2, rel));
+}
+for (const dir of ['css', 'js', 'icons']) {
+  cpSync(join(app, dir), join(v2, dir), { recursive: true });
+}
+console.log('ok  app/v2/ — копия приложения для установки на телефон');
